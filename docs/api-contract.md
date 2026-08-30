@@ -200,6 +200,44 @@ Submit a new electricity bill.
 
 ---
 
+## AI Analysis
+
+### POST /api/ai/analyze/
+Analyze a home context using the configured cloud AI provider abstraction.
+Requires Auth.
+
+**Request Body:**
+```json
+{
+  "prompt_type": "bill_analysis",
+  "context": {
+    "home_id": 1,
+    "bill_amount": 220.0,
+    "average_bill": 180.0,
+    "usage_kwh": 850,
+    "billing_period": "2026-08"
+  }
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "status": "ok",
+  "content": "Your August bill is 22% higher than your recent average. Recommendation: reduce non-essential cooling and evening appliance loads.",
+  "decision": "recommend_energy_savings",
+  "requires_approval": true,
+  "confidence": 0.91
+}
+```
+
+Notes:
+- `prompt_type` must be one of the supported AI task types.
+- Provider errors are converted to a safe application-level response instead of raw provider errors.
+- If the result is approval-gated, the backend writes a pending `DecisionLog` entry and must not auto-execute consequential actions.
+
+---
+
 ## Logs (BE4)
 
 ### GET /api/homes/<id>/activity-logs/
