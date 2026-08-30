@@ -2,7 +2,16 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from core.models import Home, HomeMember
+from core.models import (
+    Device,
+    DeviceCapability,
+    GoogleDevice,
+    Home,
+    HomeMember,
+    Room,
+    RoomMember,
+    RoomPreference,
+)
 
 User = get_user_model()
 
@@ -110,3 +119,117 @@ class InviteMemberSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("No user with this email exists.")
         return email
+
+
+class RoomSerializer(serializers.ModelSerializer):
+    """Serializer for room data."""
+
+    home_id = serializers.IntegerField(source="home.id", read_only=True)
+
+    class Meta:
+        model = Room
+        fields = ["id", "home_id", "name", "description", "created_at", "updated_at"]
+        read_only_fields = ["id", "home_id", "created_at", "updated_at"]
+
+
+class RoomMemberSerializer(serializers.ModelSerializer):
+    """Serializer for room assignment to a HomeMember."""
+
+    member_id = serializers.IntegerField(source="home_member.id", read_only=True)
+    email = serializers.EmailField(source="home_member.user.email", read_only=True)
+    role = serializers.CharField(source="home_member.role", read_only=True)
+
+    class Meta:
+        model = RoomMember
+        fields = ["id", "member_id", "email", "role", "is_primary", "assigned_at"]
+        read_only_fields = fields
+
+
+class AssignRoomMemberSerializer(serializers.Serializer):
+    """Assign a home member to a room."""
+
+    member_id = serializers.IntegerField()
+
+    def validate_member_id(self, value):
+        try:
+            membership = HomeMember.objects.get(pk=value)
+        except HomeMember.DoesNotExist:
+            raise serializers.ValidationError("Home member not found.")
+        self.context["home_member"] = membership
+        return value
+
+
+class RoomPreferenceSerializer(serializers.ModelSerializer):
+    """Serializer for room-scoped preference configuration."""
+
+    class Meta:
+        model = RoomPreference
+        fields = ["id", "room", "preferences", "created_at", "updated_at"]
+        read_only_fields = ["id", "room", "created_at", "updated_at"]
+
+    def validate_preferences(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Preferences must be a JSON object.")
+        return value
+
+
+class GoogleDeviceSerializer(serializers.ModelSerializer):
+    """Metadata for a Google Home device mapping."""
+
+    class Meta:
+        model = GoogleDevice
+        fields = ["id", "google_device_id", "structure_id", "name", "status", "metadata", "created_at", "updated_at"]
+        read_only_fields = fields
+
+
+class DeviceSerializer(serializers.ModelSerializer):
+    """Device metadata and Google mapping payload."""
+
+    room_id = serializers.PrimaryKeyRelatedField(source="room", queryset=Room.objects.all(), required=False, allow_null=True)
+    google_mapping = GoogleDeviceSerializer(read_only=True)
+
+    class Meta:
+        model = Device
+        fields = [
+            "id",
+            "home",
+            "room_id",
+            "name",
+            "device_type",
+            "manufacturer",
+            "model",
+            "serial_number",
+            "status",
+            "google_mapping",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "home", "google_mapping", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        device = Device.objects.create(**validated_data)
+        if not hasattr(device, "google_mapping"):
+            google_id = f"google-device-{device.pk}-{device.name.lower().replace(' ', '-')}"
+            GoogleDevice.objects.create(
+                device=device,
+                google_device_id=google_id,
+                name=device.name,
+                status=device.status,
+            )
+        return device
+
+
+class DeviceCapabilitySerializer(serializers.ModelSerializer):
+    """Capability metadata for a device."""
+
+    class Meta:
+        model = DeviceCapability
+        fields = ["id", "device", "capability_type", "name", "supported", "metadata", "created_at", "updated_at"]
+        read_only_fields = ["id", "device", "created_at", "updated_at"]
+
+    def validate_metadata(self, value):
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Capability metadata must be a JSON object.")
+        return value

@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.db import IntegrityError
 from django.http import JsonResponse
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -10,9 +9,12 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import Home, HomeMember
+from core.models import Device, DeviceCapability, Home, HomeMember, Room, RoomMember, RoomPreference
 from core.permissions import IsHomeMember, IsHomeOwner
 from core.serializers import (
+    AssignRoomMemberSerializer,
+    DeviceCapabilitySerializer,
+    DeviceSerializer,
     HomeSerializer,
     HomeMemberSerializer,
     InviteMemberSerializer,
@@ -20,6 +22,9 @@ from core.serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RegisterSerializer,
+    RoomMemberSerializer,
+    RoomPreferenceSerializer,
+    RoomSerializer,
     UserSerializer,
 )
 
@@ -85,7 +90,6 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # Delete the token associated with the current request
         Token.objects.filter(user=request.user).delete()
         return Response({"detail": "Logged out."}, status=status.HTTP_200_OK)
 
@@ -115,7 +119,6 @@ class PasswordResetRequestView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            # Return 200 regardless to prevent email enumeration
             return Response(
                 {"detail": "If that email is registered, a reset link has been sent."},
                 status=status.HTTP_200_OK,
@@ -144,24 +147,14 @@ class PasswordResetConfirmView(APIView):
             uid = force_str(urlsafe_base64_decode(serializer.validated_data["uid"]))
             user = User.objects.get(pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            return Response(
-                {"detail": "Invalid reset link."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": "Invalid reset link."}, status=status.HTTP_400_BAD_REQUEST)
         token = serializer.validated_data["token"]
         if not default_token_generator.check_token(user, token):
-            return Response(
-                {"detail": "Invalid or expired reset token."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"detail": "Invalid or expired reset token."}, status=status.HTTP_400_BAD_REQUEST)
         user.set_password(serializer.validated_data["new_password"])
         user.save()
-        # Revoke any existing auth tokens so the user must log in again
         Token.objects.filter(user=user).delete()
-        return Response(
-            {"detail": "Password has been reset."},
-            status=status.HTTP_200_OK,
-        )
+        return Response({"detail": "Password has been reset."}, status=status.HTTP_200_OK)
 
 
 # ---------------------------------------------------------------------------
@@ -174,9 +167,7 @@ class HomeListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        home_ids = HomeMember.objects.filter(user=request.user).values_list(
-            "home_id", flat=True
-        )
+        home_ids = HomeMember.objects.filter(user=request.user).values_list("home_id", flat=True)
         homes = Home.objects.filter(id__in=home_ids)
         return Response(HomeSerializer(homes, many=True).data, status=status.HTTP_200_OK)
 
@@ -184,7 +175,6 @@ class HomeListCreateView(APIView):
         serializer = HomeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         home = serializer.save(owner=request.user)
-        # Automatically add the creator as owner member
         HomeMember.objects.create(home=home, user=request.user, role=HomeMember.Role.OWNER)
         return Response(HomeSerializer(home).data, status=status.HTTP_201_CREATED)
 
@@ -193,22 +183,6 @@ class HomeDetailView(APIView):
     """Retrieve, update, or delete a specific home."""
 
     permission_classes = [IsAuthenticated]
-
-    def _get_home(self, home_id, user):
-        """Return (home, error_response). error_response is None on success."""
-        try:
-            home = Home.objects.get(pk=home_id)
-        except Home.DoesNotExist:
-            return None, Response(
-                {"detail": "Home not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        if not IsHomeMember().has_object_permission(None, None, home) and not HomeMember.objects.filter(home=home, user=user).exists():
-            return None, Response(
-                {"detail": "You are not a member of this home."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        return home, None
 
     def get(self, request, home_id):
         try:
@@ -318,3 +292,277 @@ class LeaveHomeView(APIView):
             return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
         membership.delete()
         return Response({"detail": "You have left the home."}, status=status.HTTP_200_OK)
+
+
+# ---------------------------------------------------------------------------
+# Room and device views
+# ---------------------------------------------------------------------------
+
+class RoomListCreateView(APIView):
+    """List rooms for a home or create a new room."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, home_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        rooms = Room.objects.filter(home=home).order_by("name")
+        return Response(RoomSerializer(rooms, many=True).data, status=status.HTTP_200_OK)
+
+    def post(self, request, home_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can manage rooms."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = RoomSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        room = Room.objects.create(home=home, **serializer.validated_data)
+        return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
+
+
+class RoomDetailView(APIView):
+    """Get or update a single room."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, home_id, room_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            room = Room.objects.get(pk=room_id, home=home)
+        except Room.DoesNotExist:
+            return Response({"detail": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return Response(RoomSerializer(room).data, status=status.HTTP_200_OK)
+
+    def put(self, request, home_id, room_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            room = Room.objects.get(pk=room_id, home=home)
+        except Room.DoesNotExist:
+            return Response({"detail": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can update rooms."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = RoomSerializer(room, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(RoomSerializer(room).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, home_id, room_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            room = Room.objects.get(pk=room_id, home=home)
+        except Room.DoesNotExist:
+            return Response({"detail": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can delete rooms."}, status=status.HTTP_403_FORBIDDEN)
+        room.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RoomMemberListCreateView(APIView):
+    """List or add member assignments for a room."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, home_id, room_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            room = Room.objects.get(pk=room_id, home=home)
+        except Room.DoesNotExist:
+            return Response({"detail": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        assignments = RoomMember.objects.filter(room=room).select_related("home_member__user")
+        return Response(RoomMemberSerializer(assignments, many=True).data, status=status.HTTP_200_OK)
+
+    def post(self, request, home_id, room_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            room = Room.objects.get(pk=room_id, home=home)
+        except Room.DoesNotExist:
+            return Response({"detail": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can assign room members."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = AssignRoomMemberSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        membership = serializer.context["home_member"]
+        if membership.home != home:
+            return Response({"detail": "That member is not part of this home."}, status=status.HTTP_400_BAD_REQUEST)
+        if RoomMember.objects.filter(room=room, home_member=membership).exists():
+            return Response({"detail": "This member is already assigned to the room."}, status=status.HTTP_400_BAD_REQUEST)
+        assignment = RoomMember.objects.create(room=room, home_member=membership)
+        return Response(RoomMemberSerializer(assignment).data, status=status.HTTP_201_CREATED)
+
+
+class RoomPreferenceListCreateView(APIView):
+    """Get or set room-scoped preferences for a room."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, home_id, room_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            room = Room.objects.get(pk=room_id, home=home)
+        except Room.DoesNotExist:
+            return Response({"detail": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        pref, _ = RoomPreference.objects.get_or_create(room=room)
+        return Response(RoomPreferenceSerializer(pref).data, status=status.HTTP_200_OK)
+
+    def post(self, request, home_id, room_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            room = Room.objects.get(pk=room_id, home=home)
+        except Room.DoesNotExist:
+            return Response({"detail": "Room not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can manage room preferences."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = RoomPreferenceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        pref, created = RoomPreference.objects.update_or_create(
+            room=room,
+            defaults={"preferences": serializer.validated_data["preferences"]},
+        )
+        return Response(RoomPreferenceSerializer(pref).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class DeviceListCreateView(APIView):
+    """List devices in a home or create a new device metadata record."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, home_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        devices = Device.objects.filter(home=home).select_related("room").prefetch_related("capabilities", "google_mapping")
+        return Response(DeviceSerializer(devices, many=True).data, status=status.HTTP_200_OK)
+
+    def post(self, request, home_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can add devices."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = DeviceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        device = serializer.save(home=home)
+        return Response(DeviceSerializer(device).data, status=status.HTTP_201_CREATED)
+
+
+class DeviceDetailView(APIView):
+    """View, update, or remove a single device."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, home_id, device_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            device = Device.objects.get(pk=device_id, home=home)
+        except Device.DoesNotExist:
+            return Response({"detail": "Device not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return Response(DeviceSerializer(device).data, status=status.HTTP_200_OK)
+
+    def put(self, request, home_id, device_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            device = Device.objects.get(pk=device_id, home=home)
+        except Device.DoesNotExist:
+            return Response({"detail": "Device not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can update devices."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = DeviceSerializer(device, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(DeviceSerializer(device).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, home_id, device_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            device = Device.objects.get(pk=device_id, home=home)
+        except Device.DoesNotExist:
+            return Response({"detail": "Device not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can delete devices."}, status=status.HTTP_403_FORBIDDEN)
+        device.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DeviceCapabilityListCreateView(APIView):
+    """List capabilities for a device or add a new capability metadata record."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, home_id, device_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            device = Device.objects.get(pk=device_id, home=home)
+        except Device.DoesNotExist:
+            return Response({"detail": "Device not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        capabilities = DeviceCapability.objects.filter(device=device)
+        return Response(DeviceCapabilitySerializer(capabilities, many=True).data, status=status.HTTP_200_OK)
+
+    def post(self, request, home_id, device_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            device = Device.objects.get(pk=device_id, home=home)
+        except Device.DoesNotExist:
+            return Response({"detail": "Device not found."}, status=status.HTTP_404_NOT_FOUND)
+        if home.owner != request.user:
+            return Response({"detail": "Only the owner can add device capabilities."}, status=status.HTTP_403_FORBIDDEN)
+        serializer = DeviceCapabilitySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        capability = DeviceCapability.objects.create(device=device, **serializer.validated_data)
+        return Response(DeviceCapabilitySerializer(capability).data, status=status.HTTP_201_CREATED)

@@ -16,4 +16,13 @@ urlpatterns = [
     path("homes/<int:home_id>/members/", views.HomeMemberListCreateView.as_view(), name="home-member-list-create"),
     path("homes/<int:home_id>/members/<int:member_id>/", views.HomeMemberRemoveView.as_view(), name="home-member-remove"),
     path("homes/<int:home_id>/leave/", views.LeaveHomeView.as_view(), name="home-leave"),
+    # Rooms
+    path("homes/<int:home_id>/rooms/", views.RoomListCreateView.as_view(), name="room-list-create"),
+    path("homes/<int:home_id>/rooms/<int:room_id>/", views.RoomDetailView.as_view(), name="room-detail"),
+    path("homes/<int:home_id>/rooms/<int:room_id>/members/", views.RoomMemberListCreateView.as_view(), name="room-member-list-create"),
+    path("homes/<int:home_id>/rooms/<int:room_id>/preferences/", views.RoomPreferenceListCreateView.as_view(), name="room-preference-list-create"),
+    # Devices
+    path("homes/<int:home_id>/devices/", views.DeviceListCreateView.as_view(), name="device-list-create"),
+    path("homes/<int:home_id>/devices/<int:device_id>/", views.DeviceDetailView.as_view(), name="device-detail"),
+    path("homes/<int:home_id>/devices/<int:device_id>/capabilities/", views.DeviceCapabilityListCreateView.as_view(), name="device-capability-list-create"),
 ]
