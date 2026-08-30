@@ -1,0 +1,5 @@
+Django>=4.2,<5.1
+Djangorestframework>=3.15,<3.17
+django-cors-headers>=4.3,<5.0
+python-dotenv>=1.0,<2.0
+PyMySQL>=1.1,<2.0
