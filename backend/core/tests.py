@@ -154,6 +154,58 @@ class HomeTests(TestCase):
         self.assertEqual(HomeMember.objects.count(), 1)
 
 
+class BE4Tests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email="owner_be4@example.com", password="StrongPassword123!", first_name="Owner", last_name="User"
+        )
+        self.home = Home.objects.create(name="BE4 Home", owner=self.owner)
+        HomeMember.objects.create(home=self.home, user=self.owner, role=HomeMember.Role.OWNER)
+
+        response = self.client.post(reverse("login"), {"email": "owner_be4@example.com", "password": "StrongPassword123!"})
+        self.token = response.data["token"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token}")
+
+    def test_presence_event(self):
+        url = reverse("presence-event-list-create", args=[self.home.id])
+        response = self.client.post(url, {"state": "away"})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["state"], "away")
+
+    def test_security_event_valid(self):
+        url = reverse("security-event-list-create", args=[self.home.id])
+        response = self.client.post(url, {"mode": "armed_home"})
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["mode"], "armed_home")
+
+    def test_security_event_invalid(self):
+        url = reverse("security-event-list-create", args=[self.home.id])
+        response = self.client.post(url, {"mode": "invalid_mode"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_decision_log_approval(self):
+        # AI proposes an action
+        url = reverse("decision-log-list-create", args=[self.home.id])
+        response = self.client.post(url, {
+            "source": "AI_Agent",
+            "decision": "turn_off_lights",
+            "reason": "Room is empty"
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["status"], "pending_approval")
+        log_id = response.data["id"]
+
+        # Approve the action
+        approve_url = reverse("decision-log-approve", args=[self.home.id, log_id])
+        response = self.client.post(approve_url, {"action": "approve"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify it was logged in ActivityLog
+        from core.models import ActivityLog
+        self.assertTrue(ActivityLog.objects.filter(home=self.home, action__contains="turn_off_lights").exists())
+
+
 class RoomAndDeviceTests(TestCase):
     def setUp(self):
         self.client = APIClient()

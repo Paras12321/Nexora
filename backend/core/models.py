@@ -223,3 +223,119 @@ class DeviceCapability(models.Model):
 
     def __str__(self):
         return f"{self.device.name}: {self.name}"
+
+
+class PresenceEvent(models.Model):
+    """Event tracking presence state changes (Home/Away/Unknown)."""
+    class State(models.TextChoices):
+        HOME = "home", "Home"
+        AWAY = "away", "Away"
+        UNKNOWN = "unknown", "Unknown"
+
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name="presence_events")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    state = models.CharField(max_length=20, choices=State.choices)
+    source = models.CharField(max_length=100, default="system")
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "nexora_presence_event"
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.home.name} - {self.state} at {self.timestamp}"
+
+
+class SecurityEvent(models.Model):
+    """Event tracking security mode changes (Disarmed, Armed Home, Armed Away)."""
+    class Mode(models.TextChoices):
+        DISARMED = "disarmed", "Disarmed"
+        ARMED_HOME = "armed_home", "Armed Home"
+        ARMED_AWAY = "armed_away", "Armed Away"
+
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name="security_events")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    mode = models.CharField(max_length=20, choices=Mode.choices)
+    source = models.CharField(max_length=100, default="system")
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "nexora_security_event"
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.home.name} - {self.mode} at {self.timestamp}"
+
+
+class EnergyUsageRecord(models.Model):
+    """Energy usage record for the home or specific device."""
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name="energy_records")
+    device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True, blank=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    usage_kwh = models.DecimalField(max_digits=10, decimal_places=4)
+
+    class Meta:
+        db_table = "nexora_energy_record"
+        ordering = ["-start_time"]
+
+    def __str__(self):
+        return f"{self.home.name} - {self.usage_kwh}kWh"
+
+
+class ElectricityBill(models.Model):
+    """User-submitted electricity bill for the home."""
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name="bills")
+    user_submitted = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    billing_period_start = models.DateField()
+    billing_period_end = models.DateField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=10, default="USD")
+    usage_kwh = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "nexora_electricity_bill"
+        ordering = ["-billing_period_start"]
+
+    def __str__(self):
+        return f"{self.home.name} Bill - {self.billing_period_start}"
+
+
+class ActivityLog(models.Model):
+    """Audit log of all actions taken in the home."""
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name="activity_logs")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    source = models.CharField(max_length=100, default="system")
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
+    device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=255)
+    status = models.CharField(max_length=50, default="success")
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "nexora_activity_log"
+        ordering = ["-timestamp"]
+
+
+class DecisionLog(models.Model):
+    """Audit log of decisions (especially AI proposals) that may require approval."""
+    class Status(models.TextChoices):
+        PENDING = "pending_approval", "Pending Approval"
+        EXECUTED = "executed", "Executed"
+        REJECTED = "rejected", "Rejected"
+
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name="decision_logs")
+    source = models.CharField(max_length=100)
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
+    device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True, blank=True)
+    decision = models.CharField(max_length=255)
+    reason = models.TextField()
+    status = models.CharField(max_length=50, choices=Status.choices, default=Status.PENDING)
+    timestamp = models.DateTimeField(default=timezone.now)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "nexora_decision_log"
+        ordering = ["-timestamp"]
+

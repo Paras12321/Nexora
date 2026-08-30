@@ -159,3 +159,63 @@ Remove a member. Requires Auth (must be owner).
 ### POST /api/homes/<id>/leave/
 Leave a home. Requires Auth (must be member, cannot be owner).
 **Response (200 OK):** `{"detail": "You have left the home."}`
+
+---
+
+## Presence & Security (BE4)
+
+### GET /api/homes/<id>/presence/
+Get the latest 50 presence events. Requires Auth.
+
+### POST /api/homes/<id>/presence/
+Create a presence event.
+**Request Body:** `{"state": "home|away|unknown", "source": "system"}`
+**Response (201 Created):** PresenceEvent object.
+
+### GET /api/homes/<id>/security/
+Get the latest 50 security events. Requires Auth.
+
+### POST /api/homes/<id>/security/
+Change security mode. Must be one of the deterministic choices.
+**Request Body:** `{"mode": "disarmed|armed_home|armed_away", "source": "user"}`
+**Response (201 Created):** SecurityEvent object.
+
+---
+
+## Energy & Billing (BE4)
+
+### GET /api/homes/<id>/energy/
+List energy usage records.
+
+### POST /api/homes/<id>/energy/
+Create an energy usage record.
+**Request Body:** `{"start_time": "...", "end_time": "...", "usage_kwh": "..."}`
+
+### GET /api/homes/<id>/bills/
+List electricity bills.
+
+### POST /api/homes/<id>/bills/
+Submit a new electricity bill.
+**Request Body:** `{"billing_period_start": "...", "billing_period_end": "...", "amount": "...", "usage_kwh": "..."}`
+
+---
+
+## Logs (BE4)
+
+### GET /api/homes/<id>/activity-logs/
+List activity logs.
+
+### POST /api/homes/<id>/activity-logs/
+Log an action/event.
+
+### GET /api/homes/<id>/decision-logs/
+List AI or system decision logs.
+
+### POST /api/homes/<id>/decision-logs/
+Propose a decision (e.g. from AI) which goes into `pending_approval` state.
+**Request Body:** `{"source": "AI_Agent", "decision": "arm_system", "reason": "No one is home"}`
+
+### POST /api/homes/<id>/decision-logs/<log_id>/approve/
+Approve or reject a pending decision.
+**Request Body:** `{"action": "approve|reject"}`
+**Response (200 OK):** `{"detail": "Decision approved and executed."}`

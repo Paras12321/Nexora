@@ -25,4 +25,17 @@ urlpatterns = [
     path("homes/<int:home_id>/devices/", views.DeviceListCreateView.as_view(), name="device-list-create"),
     path("homes/<int:home_id>/devices/<int:device_id>/", views.DeviceDetailView.as_view(), name="device-detail"),
     path("homes/<int:home_id>/devices/<int:device_id>/capabilities/", views.DeviceCapabilityListCreateView.as_view(), name="device-capability-list-create"),
+    
+    # Presence & Security
+    path("homes/<int:home_id>/presence/", views.PresenceEventListCreateView.as_view(), name="presence-event-list-create"),
+    path("homes/<int:home_id>/security/", views.SecurityEventListCreateView.as_view(), name="security-event-list-create"),
+    
+    # Energy & Bills
+    path("homes/<int:home_id>/energy/", views.EnergyUsageRecordListCreateView.as_view(), name="energy-record-list-create"),
+    path("homes/<int:home_id>/bills/", views.ElectricityBillListCreateView.as_view(), name="electricity-bill-list-create"),
+    
+    # Activity & Decision Logs
+    path("homes/<int:home_id>/activity-logs/", views.ActivityLogListCreateView.as_view(), name="activity-log-list-create"),
+    path("homes/<int:home_id>/decision-logs/", views.DecisionLogListCreateView.as_view(), name="decision-log-list-create"),
+    path("homes/<int:home_id>/decision-logs/<int:log_id>/approve/", views.DecisionLogApproveView.as_view(), name="decision-log-approve"),
 ]

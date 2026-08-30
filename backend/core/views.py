@@ -9,14 +9,29 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import Device, DeviceCapability, Home, HomeMember, Room, RoomMember, RoomPreference
+from core.models import (
+    Device,
+    DeviceCapability,
+    GoogleDevice,
+    Home,
+    HomeMember,
+    Room,
+    RoomMember,
+    RoomPreference,
+    PresenceEvent,
+    SecurityEvent,
+    EnergyUsageRecord,
+    ElectricityBill,
+    ActivityLog,
+    DecisionLog,
+)
 from core.permissions import IsHomeMember, IsHomeOwner
 from core.serializers import (
     AssignRoomMemberSerializer,
     DeviceCapabilitySerializer,
     DeviceSerializer,
-    HomeSerializer,
     HomeMemberSerializer,
+    HomeSerializer,
     InviteMemberSerializer,
     LoginSerializer,
     PasswordResetConfirmSerializer,
@@ -26,6 +41,13 @@ from core.serializers import (
     RoomPreferenceSerializer,
     RoomSerializer,
     UserSerializer,
+    PresenceEventSerializer,
+    SecurityEventSerializer,
+    EnergyUsageRecordSerializer,
+    ElectricityBillSerializer,
+    ActivityLogSerializer,
+    DecisionLogSerializer,
+    DecisionLogApproveSerializer,
 )
 
 User = get_user_model()
@@ -566,3 +588,235 @@ class DeviceCapabilityListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         capability = DeviceCapability.objects.create(device=device, **serializer.validated_data)
         return Response(DeviceCapabilitySerializer(capability).data, status=status.HTTP_201_CREATED)
+
+
+# ---------------------------------------------------------------------------
+# Presence & Security Views
+# ---------------------------------------------------------------------------
+
+class PresenceEventListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_home(self, home_id, user):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return None, Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=user).exists():
+            return None, Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return home, None
+
+    def get(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        events = PresenceEvent.objects.filter(home=home)[:50]
+        return Response(PresenceEventSerializer(events, many=True).data)
+
+    def post(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        serializer = PresenceEventSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(home=home, user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class SecurityEventListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_home(self, home_id, user):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return None, Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=user).exists():
+            return None, Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return home, None
+
+    def get(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        events = SecurityEvent.objects.filter(home=home)[:50]
+        return Response(SecurityEventSerializer(events, many=True).data)
+
+    def post(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        serializer = SecurityEventSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(home=home, user=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# ---------------------------------------------------------------------------
+# Energy & Bills Views
+# ---------------------------------------------------------------------------
+
+class EnergyUsageRecordListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_home(self, home_id, user):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return None, Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=user).exists():
+            return None, Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return home, None
+
+    def get(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        records = EnergyUsageRecord.objects.filter(home=home)[:100]
+        return Response(EnergyUsageRecordSerializer(records, many=True).data)
+
+    def post(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        serializer = EnergyUsageRecordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(home=home)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ElectricityBillListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_home(self, home_id, user):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return None, Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=user).exists():
+            return None, Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return home, None
+
+    def get(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        bills = ElectricityBill.objects.filter(home=home)
+        return Response(ElectricityBillSerializer(bills, many=True).data)
+
+    def post(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        serializer = ElectricityBillSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(home=home, user_submitted=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# ---------------------------------------------------------------------------
+# Activity & Decision Log Views
+# ---------------------------------------------------------------------------
+
+class ActivityLogListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_home(self, home_id, user):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return None, Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=user).exists():
+            return None, Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return home, None
+
+    def get(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        logs = ActivityLog.objects.filter(home=home)[:100]
+        return Response(ActivityLogSerializer(logs, many=True).data)
+
+    def post(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        serializer = ActivityLogSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(home=home, actor=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class DecisionLogListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _get_home(self, home_id, user):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return None, Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        if not HomeMember.objects.filter(home=home, user=user).exists():
+            return None, Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+        return home, None
+
+    def get(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        logs = DecisionLog.objects.filter(home=home)[:100]
+        return Response(DecisionLogSerializer(logs, many=True).data)
+
+    def post(self, request, home_id):
+        home, error = self._get_home(home_id, request.user)
+        if error:
+            return error
+        serializer = DecisionLogSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(home=home, status=DecisionLog.Status.PENDING)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class DecisionLogApproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, home_id, log_id):
+        try:
+            home = Home.objects.get(pk=home_id)
+        except Home.DoesNotExist:
+            return Response({"detail": "Home not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        if not HomeMember.objects.filter(home=home, user=request.user).exists():
+            return Response({"detail": "You are not a member of this home."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            decision_log = DecisionLog.objects.get(pk=log_id, home=home)
+        except DecisionLog.DoesNotExist:
+            return Response({"detail": "Decision log not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if decision_log.status != DecisionLog.Status.PENDING:
+            return Response({"detail": "Decision is not pending."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = DecisionLogApproveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        from django.utils import timezone
+        
+        action = serializer.validated_data["action"]
+        if action == "approve":
+            decision_log.status = DecisionLog.Status.EXECUTED
+            decision_log.resolved_at = timezone.now()
+            decision_log.save()
+            
+            ActivityLog.objects.create(
+                home=home,
+                actor=request.user,
+                source="user",
+                action=f"Approved AI decision: {decision_log.decision}",
+                status="success"
+            )
+            return Response({"detail": "Decision approved and executed."}, status=status.HTTP_200_OK)
+        else:
+            decision_log.status = DecisionLog.Status.REJECTED
+            decision_log.resolved_at = timezone.now()
+            decision_log.save()
+            return Response({"detail": "Decision rejected."}, status=status.HTTP_200_OK)

@@ -11,6 +11,12 @@ from core.models import (
     Room,
     RoomMember,
     RoomPreference,
+    PresenceEvent,
+    SecurityEvent,
+    EnergyUsageRecord,
+    ElectricityBill,
+    ActivityLog,
+    DecisionLog,
 )
 
 User = get_user_model()
@@ -119,6 +125,61 @@ class InviteMemberSerializer(serializers.Serializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("No user with this email exists.")
         return email
+
+
+class PresenceEventSerializer(serializers.ModelSerializer):
+    """Serializer for presence state events."""
+    class Meta:
+        model = PresenceEvent
+        fields = ["id", "home", "user", "state", "source", "timestamp"]
+        read_only_fields = ["id", "home", "user", "timestamp"]
+
+
+class SecurityEventSerializer(serializers.ModelSerializer):
+    """Serializer for security mode events with strict validation."""
+    class Meta:
+        model = SecurityEvent
+        fields = ["id", "home", "user", "mode", "source", "timestamp"]
+        read_only_fields = ["id", "home", "user", "timestamp"]
+
+    def validate_mode(self, value):
+        if value not in [choice[0] for choice in SecurityEvent.Mode.choices]:
+            raise serializers.ValidationError(f"Invalid mode. Choices are: {[c[0] for c in SecurityEvent.Mode.choices]}")
+        return value
+
+
+class EnergyUsageRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EnergyUsageRecord
+        fields = ["id", "home", "device", "start_time", "end_time", "usage_kwh"]
+        read_only_fields = ["id", "home"]
+
+
+class ElectricityBillSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ElectricityBill
+        fields = ["id", "home", "user_submitted", "billing_period_start", "billing_period_end", "amount", "currency", "usage_kwh", "created_at"]
+        read_only_fields = ["id", "home", "user_submitted", "created_at"]
+
+
+class ActivityLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActivityLog
+        fields = ["id", "home", "actor", "source", "room", "device", "action", "status", "timestamp"]
+        read_only_fields = ["id", "home", "actor", "timestamp"]
+
+
+class DecisionLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DecisionLog
+        fields = ["id", "home", "source", "room", "device", "decision", "reason", "status", "timestamp", "resolved_at"]
+        read_only_fields = ["id", "home", "timestamp", "resolved_at"]
+
+
+class DecisionLogApproveSerializer(serializers.Serializer):
+    """Serializer for approving or rejecting a pending decision."""
+    action = serializers.ChoiceField(choices=["approve", "reject"])
+
 
 
 class RoomSerializer(serializers.ModelSerializer):
