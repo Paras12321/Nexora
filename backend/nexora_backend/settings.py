@@ -11,9 +11,10 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
-# Default to MySQL for production and team workloads, but allow a local SQLite fallback
-# when the environment is intentionally configured for offline validation.
-DB_ENGINE = os.getenv("DB_ENGINE", "mysql").lower()
+# Default to the safe local SQLite fallback so misconfigured or missing MySQL
+# credentials do not silently force a failed database connection. MySQL remains
+# available when the environment is explicitly configured for a real server.
+DB_ENGINE = os.getenv("DB_ENGINE", "sqlite3").lower()
 if DB_ENGINE == "sqlite3":
     DATABASES = {
         "default": {
@@ -25,9 +26,9 @@ else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
-            "NAME": os.getenv("DB_NAME", "nexora_db"),
-            "USER": os.getenv("DB_USER", "nexora"),
-            "PASSWORD": os.getenv("DB_PASSWORD", "nexora"),
+            "NAME": os.getenv("DB_NAME", "nexora"),
+            "USER": os.getenv("DB_USER", ""),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
             "HOST": os.getenv("DB_HOST", "127.0.0.1"),
             "PORT": os.getenv("DB_PORT", "3306"),
             "OPTIONS": {
