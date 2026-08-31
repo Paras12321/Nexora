@@ -1,5 +1,6 @@
 package com.nexora.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,6 +14,7 @@ import com.nexora.app.ui.theme.NexoraTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleIntent(intent)
         setContent {
             NexoraTheme {
                 Surface(
@@ -23,6 +25,19 @@ class MainActivity : ComponentActivity() {
                     NexoraNavGraph(navController = navController)
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        val data = intent?.data ?: return
+        val app = application as? NexoraApp ?: return
+        if (data.scheme == app.googleHomeConfig.redirectScheme) {
+            app.googleHomeAuthManager.handleRedirectUri(data.toString())
         }
     }
 }

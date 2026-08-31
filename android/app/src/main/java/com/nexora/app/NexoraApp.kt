@@ -16,6 +16,11 @@ import com.nexora.app.data.repository.HomeRepositoryImpl
 import com.nexora.app.data.repository.RoomRepository
 import com.nexora.app.data.repository.RoomRepositoryImpl
 
+import com.nexora.app.data.googlehome.GoogleHomeAuthManager
+import com.nexora.app.data.googlehome.GoogleHomeClientManager
+import com.nexora.app.data.googlehome.GoogleHomeConfig
+import com.nexora.app.data.repository.GoogleHomeDeviceRepository
+
 class NexoraApp : Application() {
 
     lateinit var tokenManager: TokenManager
@@ -28,6 +33,15 @@ class NexoraApp : Application() {
         private set
 
     lateinit var roomRepository: RoomRepository
+        private set
+
+    lateinit var googleHomeConfig: GoogleHomeConfig
+        private set
+
+    lateinit var googleHomeAuthManager: GoogleHomeAuthManager
+        private set
+
+    lateinit var googleHomeClientManager: GoogleHomeClientManager
         private set
 
     lateinit var deviceRepository: DeviceRepository
@@ -47,6 +61,11 @@ class NexoraApp : Application() {
         val roomApiService = ApiClient.createService<RoomApiService>(tokenManager = tokenManager)
         roomRepository = RoomRepositoryImpl(roomApiService)
 
-        deviceRepository = DeviceRepositoryMock()
+        googleHomeConfig = GoogleHomeConfig()
+        googleHomeAuthManager = GoogleHomeAuthManager(googleHomeConfig, tokenManager)
+        googleHomeAuthManager.grantPermissionDirectly()
+        googleHomeClientManager = GoogleHomeClientManager(googleHomeAuthManager)
+        
+        deviceRepository = GoogleHomeDeviceRepository(googleHomeAuthManager, googleHomeClientManager)
     }
 }

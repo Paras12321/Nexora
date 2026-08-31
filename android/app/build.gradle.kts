@@ -18,6 +18,14 @@ android {
         val baseUrl = project.findProperty("BASE_URL") as? String ?: "http://10.0.2.2:8000/api/"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
 
+        val googleHomeProjectId = project.findProperty("GOOGLE_HOME_PROJECT_ID") as? String ?: "nexora-google-home-dev"
+        val googleOAuthClientId = project.findProperty("GOOGLE_OAUTH_CLIENT_ID") as? String ?: "nexora-oauth-client-dev.apps.googleusercontent.com"
+        val googleOAuthRedirectScheme = project.findProperty("GOOGLE_OAUTH_REDIRECT_SCHEME") as? String ?: "com.nexora.app"
+
+        buildConfigField("String", "GOOGLE_HOME_PROJECT_ID", "\"$googleHomeProjectId\"")
+        buildConfigField("String", "GOOGLE_OAUTH_CLIENT_ID", "\"$googleOAuthClientId\"")
+        buildConfigField("String", "GOOGLE_OAUTH_REDIRECT_SCHEME", "\"$googleOAuthRedirectScheme\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
