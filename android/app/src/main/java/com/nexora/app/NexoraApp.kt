@@ -28,6 +28,10 @@ import com.nexora.app.data.googlehome.GoogleHomeClientManager
 import com.nexora.app.data.googlehome.GoogleHomeConfig
 import com.nexora.app.data.repository.GoogleHomeDeviceRepository
 
+import com.nexora.app.data.remote.AiApiService
+import com.nexora.app.data.repository.AiRepository
+import com.nexora.app.data.repository.AiRepositoryImpl
+
 class NexoraApp : Application() {
 
     lateinit var tokenManager: TokenManager
@@ -60,6 +64,9 @@ class NexoraApp : Application() {
     lateinit var energyRepository: EnergyRepository
         private set
 
+    lateinit var aiRepository: AiRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         
@@ -87,5 +94,8 @@ class NexoraApp : Application() {
 
         val energyApiService = ApiClient.createService<EnergyApiService>(tokenManager = tokenManager)
         energyRepository = EnergyRepositoryImpl(energyApiService)
+
+        val aiApiService = ApiClient.createService<AiApiService>(tokenManager = tokenManager)
+        aiRepository = AiRepositoryImpl(aiApiService)
     }
 }

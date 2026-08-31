@@ -28,7 +28,8 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onNavigateToRoomDetail: (homeId: Int, roomId: Int) -> Unit,
     onNavigateToDeviceDetail: (String) -> Unit,
-    onNavigateToEnergy: (homeId: Int) -> Unit
+    onNavigateToEnergy: (homeId: Int) -> Unit,
+    onNavigateToAiInsights: (homeId: Int) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -108,6 +109,9 @@ fun HomeScreen(
                 },
                 actions = {
                     uiState.selectedHome?.let { home ->
+                        IconButton(onClick = { onNavigateToAiInsights(home.id) }) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = "AI Insights")
+                        }
                         IconButton(onClick = { onNavigateToEnergy(home.id) }) {
                             Icon(Icons.Default.Bolt, contentDescription = "Energy & Billing")
                         }

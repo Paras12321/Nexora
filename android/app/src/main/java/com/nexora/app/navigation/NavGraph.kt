@@ -28,6 +28,10 @@ import com.nexora.app.ui.screens.room.RoomDetailViewModel
 import com.nexora.app.ui.screens.room.RoomDetailViewModelFactory
 import com.nexora.app.ui.screens.splash.SplashScreen
 
+import com.nexora.app.ui.screens.ai.AiInsightsScreen
+import com.nexora.app.ui.screens.ai.AiViewModel
+import com.nexora.app.ui.screens.ai.AiViewModelFactory
+
 object Routes {
     const val SPLASH = "splash"
     const val LOGIN = "login"
@@ -37,6 +41,7 @@ object Routes {
     const val ROOM_DETAIL = "room_detail/{homeId}/{roomId}"
     const val DEVICE_DETAIL = "device_detail/{deviceId}"
     const val ENERGY = "energy/{homeId}"
+    const val AI_INSIGHTS = "ai_insights/{homeId}"
 
     fun buildRoomDetailRoute(homeId: Int, roomId: Int): String {
         return "room_detail/$homeId/$roomId"
@@ -48,6 +53,10 @@ object Routes {
 
     fun buildEnergyRoute(homeId: Int): String {
         return "energy/$homeId"
+    }
+
+    fun buildAiInsightsRoute(homeId: Int): String {
+        return "ai_insights/$homeId"
     }
 }
 
@@ -120,6 +129,9 @@ fun NexoraNavGraph(navController: NavHostController) {
                 },
                 onNavigateToEnergy = { homeId ->
                     navController.navigate(Routes.buildEnergyRoute(homeId))
+                },
+                onNavigateToAiInsights = { homeId ->
+                    navController.navigate(Routes.buildAiInsightsRoute(homeId))
                 }
             )
         }
@@ -175,6 +187,23 @@ fun NexoraNavGraph(navController: NavHostController) {
             )
             EnergyScreen(
                 viewModel = energyViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(
+            route = Routes.AI_INSIGHTS,
+            arguments = listOf(
+                navArgument("homeId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val homeId = backStackEntry.arguments?.getInt("homeId") ?: 0
+            val aiViewModel: AiViewModel = viewModel(
+                factory = AiViewModelFactory(homeId, app.aiRepository)
+            )
+            AiInsightsScreen(
+                viewModel = aiViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
