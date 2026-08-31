@@ -1,9 +1,12 @@
 package com.nexora.app.ui.components
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -28,7 +31,7 @@ fun NexoraTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
-    androidx.compose.foundation.layout.Column(modifier = modifier) {
+    Column(modifier = modifier) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
@@ -47,16 +50,16 @@ fun NexoraTextField(
                 unfocusedLabelColor = TextSecondary,
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary,
-                errorBorderColor = androidx.compose.material3.MaterialTheme.colorScheme.error,
-                errorLabelColor = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                errorBorderColor = MaterialTheme.colorScheme.error,
+                errorLabelColor = MaterialTheme.colorScheme.error,
             )
         )
         if (isError && errorMessage != null) {
             Text(
                 text = errorMessage,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.error,
-                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
-                modifier = Modifier.androidx.compose.foundation.layout.padding(start = 8.dp, top = 4.dp)
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
             )
         }
     }

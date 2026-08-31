@@ -1,10 +1,15 @@
 package com.nexora.app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.nexora.app.NexoraApp
 import com.nexora.app.ui.screens.forgot_password.ForgotPasswordScreen
+import com.nexora.app.ui.screens.login.AuthViewModel
+import com.nexora.app.ui.screens.login.AuthViewModelFactory
 import com.nexora.app.ui.screens.login.LoginScreen
 import com.nexora.app.ui.screens.register.RegisterScreen
 import com.nexora.app.ui.screens.splash.SplashScreen
@@ -18,6 +23,10 @@ object Routes {
 
 @Composable
 fun NexoraNavGraph(navController: NavHostController) {
+    val context = LocalContext.current
+    val app = context.applicationContext as NexoraApp
+    val authRepository = app.authRepository
+
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH
@@ -30,7 +39,11 @@ fun NexoraNavGraph(navController: NavHostController) {
             })
         }
         composable(Routes.LOGIN) {
+            val authViewModel: AuthViewModel = viewModel(
+                factory = AuthViewModelFactory(authRepository)
+            )
             LoginScreen(
+                viewModel = authViewModel,
                 onLoginSuccess = {
                     // Navigate to Home (A2 or future tasks)
                 },
