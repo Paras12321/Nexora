@@ -19,6 +19,7 @@ object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val FORGOT_PASSWORD = "forgot_password"
+    const val HOME = "home"
 }
 
 @Composable
@@ -32,8 +33,9 @@ fun NexoraNavGraph(navController: NavHostController) {
         startDestination = Routes.SPLASH
     ) {
         composable(Routes.SPLASH) {
-            SplashScreen(onSplashFinished = {
-                navController.navigate(Routes.LOGIN) {
+            SplashScreen(onSplashFinished = { isLoggedIn ->
+                val destination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
+                navController.navigate(destination) {
                     popUpTo(Routes.SPLASH) { inclusive = true }
                 }
             })
@@ -45,7 +47,9 @@ fun NexoraNavGraph(navController: NavHostController) {
             LoginScreen(
                 viewModel = authViewModel,
                 onLoginSuccess = {
-                    // Navigate to Home (A2 or future tasks)
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
                 },
                 onNavigateToRegister = {
                     navController.navigate(Routes.REGISTER)
@@ -58,7 +62,7 @@ fun NexoraNavGraph(navController: NavHostController) {
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate(Routes.LOGIN) {
+                    navController.navigate(Routes.HOME) {
                         popUpTo(Routes.REGISTER) { inclusive = true }
                     }
                 },
@@ -73,6 +77,10 @@ fun NexoraNavGraph(navController: NavHostController) {
                     navController.popBackStack()
                 }
             )
+        }
+        composable(Routes.HOME) {
+            // Placeholder for Home screen (Task A2)
+            androidx.compose.material3.Text("Home Screen Placeholder")
         }
     }
 }

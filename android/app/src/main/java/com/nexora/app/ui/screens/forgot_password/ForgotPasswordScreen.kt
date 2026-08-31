@@ -12,18 +12,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nexora.app.NexoraApp
 import com.nexora.app.ui.components.NexoraButton
 import com.nexora.app.ui.components.NexoraTextField
+import com.nexora.app.ui.screens.login.AuthViewModel
+import com.nexora.app.ui.screens.login.AuthViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForgotPasswordScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory((androidx.compose.ui.platform.LocalContext.current.applicationContext as NexoraApp).authRepository)
+    )
 ) {
     var email by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
-    var isSubmitted by remember { mutableStateOf(false) }
     var emailError by remember { mutableStateOf<String?>(null) }
+    
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -49,9 +56,9 @@ fun ForgotPasswordScreen(
                 .padding(padding)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = if (isSubmitted) Arrangement.Center else Arrangement.Top
+            verticalArrangement = if (uiState.resetEmailSent) Arrangement.Center else Arrangement.Top
         ) {
-            if (!isSubmitted) {
+            if (!uiState.resetEmailSent) {
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
                     text = "Forgot your password?",
@@ -73,27 +80,26 @@ fun ForgotPasswordScreen(
                     onValueChange = { 
                         email = it
                         emailError = null
+                        viewModel.clearError()
                     },
                     label = "Email",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    isError = emailError != null,
-                    errorMessage = emailError
+                    isError = emailError != null || uiState.error != null,
+                    errorMessage = emailError ?: uiState.error
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 NexoraButton(
                     text = "Send Reset Link",
-                    isLoading = isLoading,
+                    isLoading = uiState.isLoading,
                     onClick = {
                         if (email.isBlank()) {
                             emailError = "Email is required"
                         } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                             emailError = "Invalid email format"
                         } else {
-                            isLoading = true
-                            // Simulate API call
-                            // isSubmitted = true
+                            viewModel.resetPassword(email)
                         }
                     }
                 )

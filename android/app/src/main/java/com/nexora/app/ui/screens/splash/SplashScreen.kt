@@ -21,10 +21,17 @@ import com.nexora.app.ui.theme.PrimaryTeal
 import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(onSplashFinished: () -> Unit) {
+fun SplashScreen(
+    onSplashFinished: (isLoggedIn: Boolean) -> Unit,
+    viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory((androidx.compose.ui.platform.LocalContext.current.applicationContext as NexoraApp).authRepository)
+    )
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     LaunchedEffect(key1 = true) {
         delay(2000) // 2 seconds delay
-        onSplashFinished()
+        val isLoggedIn = (context.applicationContext as NexoraApp).authRepository.isLoggedIn()
+        onSplashFinished(isLoggedIn)
     }
 
     Box(

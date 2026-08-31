@@ -13,27 +13,42 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nexora.app.NexoraApp
 import com.nexora.app.ui.components.NexoraButton
 import com.nexora.app.ui.components.NexoraTextField
+import com.nexora.app.ui.screens.login.AuthViewModel
+import com.nexora.app.ui.screens.login.AuthViewModelFactory
 
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    viewModel: AuthViewModel = viewModel(
+        factory = AuthViewModelFactory((androidx.compose.ui.platform.LocalContext.current.applicationContext as NexoraApp).authRepository)
+    )
 ) {
-    var fullName by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var consent by remember { mutableStateOf(false) }
     
-    var isLoading by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
     
-    var fullNameError by remember { mutableStateOf<String?>(null) }
+    var firstNameError by remember { mutableStateOf<String?>(null) }
+    var lastNameError by remember { mutableStateOf<String?>(null) }
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmPasswordError by remember { mutableStateOf<String?>(null) }
     var consentError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(uiState.isSuccess) {
+        if (uiState.isSuccess) {
+            onRegisterSuccess()
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -60,16 +75,31 @@ fun RegisterScreen(
             )
             Spacer(modifier = Modifier.height(32.dp))
             
-            NexoraTextField(
-                value = fullName,
-                onValueChange = { 
-                    fullName = it
-                    fullNameError = null
-                },
-                label = "Full Name",
-                isError = fullNameError != null,
-                errorMessage = fullNameError
-            )
+            Row(modifier = Modifier.fillMaxWidth()) {
+                NexoraTextField(
+                    value = firstName,
+                    onValueChange = { 
+                        firstName = it
+                        firstNameError = null
+                    },
+                    label = "First Name",
+                    modifier = Modifier.weight(1f),
+                    isError = firstNameError != null,
+                    errorMessage = firstNameError
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                NexoraTextField(
+                    value = lastName,
+                    onValueChange = { 
+                        lastName = it
+                        lastNameError = null
+                    },
+                    label = "Last Name",
+                    modifier = Modifier.weight(1f),
+                    isError = lastNameError != null,
+                    errorMessage = lastNameError
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             
             NexoraTextField(
@@ -77,11 +107,12 @@ fun RegisterScreen(
                 onValueChange = { 
                     email = it
                     emailError = null
+                    viewModel.clearError()
                 },
                 label = "Email",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = emailError != null,
-                errorMessage = emailError
+                isError = emailError != null || uiState.error != null,
+                errorMessage = emailError ?: uiState.error
             )
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -151,11 +182,15 @@ fun RegisterScreen(
             
             NexoraButton(
                 text = "Register",
-                isLoading = isLoading,
+                isLoading = uiState.isLoading,
                 onClick = {
                     var hasError = false
-                    if (fullName.isBlank()) {
-                        fullNameError = "Name is required"
+                    if (firstName.isBlank()) {
+                        firstNameError = "First name required"
+                        hasError = true
+                    }
+                    if (lastName.isBlank()) {
+                        lastNameError = "Last name required"
                         hasError = true
                     }
                     if (email.isBlank()) {
@@ -179,8 +214,7 @@ fun RegisterScreen(
                     }
                     
                     if (!hasError) {
-                        isLoading = true
-                        // Simulate API call
+                        viewModel.register(firstName, lastName, email, password)
                     }
                 }
             )
