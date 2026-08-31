@@ -1,56 +1,13 @@
 package com.nexora.app.ui.screens.home
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Devices
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MeetingRoom
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +17,7 @@ import com.nexora.app.NexoraApp
 import com.nexora.app.domain.model.HomeMemberModel
 import com.nexora.app.domain.model.HomeModel
 import com.nexora.app.domain.model.RoomModel
+import com.nexora.app.ui.components.PresenceSecurityCard
 import com.nexora.app.ui.screens.device.DeviceItem
 import com.nexora.app.ui.screens.device.DeviceViewModel
 import com.nexora.app.ui.screens.device.DeviceViewModelFactory
@@ -76,6 +34,7 @@ fun HomeScreen(
     
     val context = LocalContext.current
     val app = context.applicationContext as NexoraApp
+    
     val deviceViewModel: DeviceViewModel = viewModel(
         factory = DeviceViewModelFactory(app.deviceRepository)
     )
@@ -207,6 +166,26 @@ fun HomeScreen(
                     }
                 }
             } else {
+                val selectedHome = uiState.selectedHome!!
+                
+                // Presence & Security Section (Task A4)
+                val presenceViewModel: PresenceSecurityViewModel = viewModel(
+                    key = "presence_${selectedHome.id}",
+                    factory = PresenceSecurityViewModelFactory(selectedHome.id, app.presenceSecurityRepository)
+                )
+                val presenceState by presenceViewModel.uiState.collectAsState()
+                
+                PresenceSecurityCard(
+                    presenceState = presenceState.presenceState,
+                    securityMode = presenceState.securityMode,
+                    onPresenceChange = { presenceViewModel.updatePresence(it) },
+                    onSecurityModeChange = { presenceViewModel.changeSecurityMode(it) },
+                    isLoading = presenceState.isLoading,
+                    isStale = presenceState.isStale,
+                    lastPresenceEvent = presenceState.lastPresenceEvent,
+                    arrivalDetected = presenceState.arrivalDetected
+                )
+
                 TabRow(selectedTabIndex = selectedTabIndex) {
                     Tab(
                         selected = selectedTabIndex == 0,
@@ -232,9 +211,7 @@ fun HomeScreen(
                     0 -> RoomsTabContent(
                         rooms = uiState.rooms,
                         onRoomClick = { room ->
-                            uiState.selectedHome?.let { home ->
-                                onNavigateToRoomDetail(home.id, room.id)
-                            }
+                            onNavigateToRoomDetail(selectedHome.id, room.id)
                         }
                     )
                     1 -> DevicesTabContent(
@@ -243,7 +220,7 @@ fun HomeScreen(
                     )
                     2 -> MembersTabContent(
                         members = uiState.members,
-                        selectedHome = uiState.selectedHome,
+                        selectedHome = selectedHome,
                         onRemoveMember = { viewModel.removeMember(it) },
                         onLeaveHome = { viewModel.leaveHome() }
                     )
@@ -360,7 +337,7 @@ fun DevicesTabContent(
         val groupedDevices = uiState.devices.groupBy { it.room }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             groupedDevices.forEach { (room, devices) ->
@@ -556,41 +533,6 @@ fun InviteMemberDialog(
 }
 
 @Composable
-fun JoinHomeDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (code: String) -> Unit
-) {
-    var inviteCode by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Join Home") },
-        text = {
-            OutlinedTextField(
-                value = inviteCode,
-                onValueChange = { inviteCode = it },
-                label = { Text("Invite Code") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(inviteCode) },
-                enabled = inviteCode.isNotBlank()
-            ) {
-                Text("Join")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
 fun CreateRoomDialog(
     onDismiss: () -> Unit,
     onConfirm: (name: String, description: String) -> Unit
@@ -624,41 +566,6 @@ fun CreateRoomDialog(
                 enabled = name.isNotBlank()
             ) {
                 Text("Add")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun JoinHomeDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (code: String) -> Unit
-) {
-    var inviteCode by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Join Home") },
-        text = {
-            OutlinedTextField(
-                value = inviteCode,
-                onValueChange = { inviteCode = it },
-                label = { Text("Invite Code") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(inviteCode) },
-                enabled = inviteCode.isNotBlank()
-            ) {
-                Text("Join")
             }
         },
         dismissButton = {

@@ -15,6 +15,10 @@ import com.nexora.app.data.repository.HomeRepository
 import com.nexora.app.data.repository.HomeRepositoryImpl
 import com.nexora.app.data.repository.RoomRepository
 import com.nexora.app.data.repository.RoomRepositoryImpl
+import com.nexora.app.data.remote.PresenceApiService
+import com.nexora.app.data.remote.SecurityApiService
+import com.nexora.app.data.repository.PresenceSecurityRepository
+import com.nexora.app.data.repository.PresenceSecurityRepositoryImpl
 
 import com.nexora.app.data.googlehome.GoogleHomeAuthManager
 import com.nexora.app.data.googlehome.GoogleHomeClientManager
@@ -47,6 +51,9 @@ class NexoraApp : Application() {
     lateinit var deviceRepository: DeviceRepository
         private set
 
+    lateinit var presenceSecurityRepository: PresenceSecurityRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         
@@ -67,5 +74,9 @@ class NexoraApp : Application() {
         googleHomeClientManager = GoogleHomeClientManager(googleHomeAuthManager)
         
         deviceRepository = GoogleHomeDeviceRepository(googleHomeAuthManager, googleHomeClientManager)
+
+        val presenceApiService = ApiClient.createService<PresenceApiService>(tokenManager = tokenManager)
+        val securityApiService = ApiClient.createService<SecurityApiService>(tokenManager = tokenManager)
+        presenceSecurityRepository = PresenceSecurityRepositoryImpl(presenceApiService, securityApiService)
     }
 }
