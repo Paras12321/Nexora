@@ -24,6 +24,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     fun login(email: String, password: String) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             when (val result = repository.login(LoginRequest(email, password))) {
@@ -39,6 +40,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 
     fun register(firstName: String, lastName: String, email: String, password: String) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             val request = RegisterRequest(email, password, firstName, lastName)
@@ -55,6 +57,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 
     fun resetPassword(email: String) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             when (val result = repository.resetPassword(email)) {
@@ -70,6 +73,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 
     fun logout() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             repository.logout()

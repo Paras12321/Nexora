@@ -33,6 +33,7 @@ class LogViewModel(
     }
 
     fun refreshLogs() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
@@ -55,6 +56,7 @@ class LogViewModel(
     }
 
     fun approveDecision(logId: Int, approve: Boolean) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             when (val result = repository.approveDecision(homeId, logId, approve)) {

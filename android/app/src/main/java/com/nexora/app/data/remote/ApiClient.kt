@@ -29,6 +29,7 @@ object ApiClient {
      */
     fun createOkHttpClient(
         tokenManager: TokenManager? = null,
+        sessionRepository: com.nexora.app.data.session.SessionRepository? = null,
         enableLogging: Boolean = BuildConfig.DEBUG
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
@@ -36,8 +37,8 @@ object ApiClient {
             .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-        if (tokenManager != null) {
-            builder.addInterceptor(AuthInterceptor(tokenManager))
+        if (tokenManager != null && sessionRepository != null) {
+            builder.addInterceptor(AuthInterceptor(tokenManager, sessionRepository))
         }
 
         if (enableLogging) {
@@ -73,9 +74,10 @@ object ApiClient {
      */
     inline fun <reified T> createService(
         baseUrl: String = BuildConfig.BASE_URL,
-        tokenManager: TokenManager? = null
+        tokenManager: TokenManager? = null,
+        sessionRepository: com.nexora.app.data.session.SessionRepository? = null
     ): T {
-        val okHttpClient = createOkHttpClient(tokenManager)
+        val okHttpClient = createOkHttpClient(tokenManager, sessionRepository)
         val retrofit = createRetrofit(baseUrl, okHttpClient)
         return retrofit.create(T::class.java)
     }

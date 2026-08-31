@@ -7,7 +7,8 @@ import com.nexora.app.data.model.*
 
 class AuthRepositoryImpl(
     private val apiService: AuthApiService,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val sessionRepository: com.nexora.app.data.session.SessionRepository
 ) : BaseRepository(), AuthRepository {
 
     override suspend fun register(request: RegisterRequest): NetworkResult<AuthResponse> {
@@ -23,10 +24,9 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout(): NetworkResult<Unit> {
-        return safeApiCall { apiService.logout() }.map { 
-            tokenManager.clearToken()
-            Unit
-        }
+        val result = safeApiCall { apiService.logout() }
+        sessionRepository.logout()
+        return result.map { Unit }
     }
 
     override suspend fun resetPassword(email: String): NetworkResult<DetailResponse> {

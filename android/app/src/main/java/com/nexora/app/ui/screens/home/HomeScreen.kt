@@ -21,6 +21,7 @@ import com.nexora.app.ui.components.PresenceSecurityCard
 import com.nexora.app.ui.screens.device.DeviceItem
 import com.nexora.app.ui.screens.device.DeviceViewModel
 import com.nexora.app.ui.screens.device.DeviceViewModelFactory
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +39,7 @@ fun HomeScreen(
     
     val context = LocalContext.current
     val app = context.applicationContext as NexoraApp
+    val scope = rememberCoroutineScope()
     
     val deviceViewModel: DeviceViewModel = viewModel(
         factory = DeviceViewModelFactory(app.deviceRepository)
@@ -104,6 +106,16 @@ fun HomeScreen(
                                 onClick = {
                                     isDropdownExpanded = false
                                     showJoinHomeDialog = true
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Logout", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    isDropdownExpanded = false
+                                    scope.launch {
+                                        app.authRepository.logout()
+                                    }
                                 }
                             )
                         }

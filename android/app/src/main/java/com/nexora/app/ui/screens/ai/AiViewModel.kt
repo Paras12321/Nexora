@@ -40,6 +40,7 @@ class AiViewModel(
     }
 
     fun loadAllData() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -98,7 +99,7 @@ class AiViewModel(
     }
 
     fun sendNaturalLanguageQuery(query: String) {
-        if (query.isBlank()) return
+        if (query.isBlank() || _uiState.value.isAnalyzingMessage) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isAnalyzingMessage = true, errorMessage = null)
             when (val result = aiRepository.analyzeMessage(homeId, query)) {
@@ -126,6 +127,7 @@ class AiViewModel(
     }
 
     fun approveDecision(logId: Int) {
+        if (_uiState.value.actionLoadingLogId != null) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(actionLoadingLogId = logId, errorMessage = null)
             when (val result = aiRepository.approveDecision(homeId, logId)) {
@@ -150,6 +152,7 @@ class AiViewModel(
     }
 
     fun rejectDecision(logId: Int) {
+        if (_uiState.value.actionLoadingLogId != null) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(actionLoadingLogId = logId, errorMessage = null)
             when (val result = aiRepository.rejectDecision(homeId, logId)) {

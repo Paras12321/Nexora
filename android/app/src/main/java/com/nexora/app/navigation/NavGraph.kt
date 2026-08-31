@@ -1,6 +1,9 @@
 package com.nexora.app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -79,10 +82,16 @@ fun NexoraNavGraph(navController: NavHostController) {
     val context = LocalContext.current
     val app = context.applicationContext as NexoraApp
 
-    NavHost(
-        navController = navController,
-        startDestination = Routes.SPLASH
-    ) {
+    val isSessionExpired by app.sessionRepository.isSessionExpired.collectAsState()
+
+    LaunchedEffect(isSessionExpired) {
+        if (isSessionExpired) {
+            navController.navigate(Routes.LOGIN) {
+                popUpTo(0) { inclusive = true }
+            }
+            app.sessionRepository.resetSessionExpired()
+        }
+    }
         composable(Routes.SPLASH) {
             SplashScreen(onSplashFinished = { isLoggedIn ->
                 val destination = if (isLoggedIn) Routes.HOME else Routes.LOGIN

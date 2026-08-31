@@ -36,6 +36,7 @@ class PresenceSecurityViewModel(
     }
 
     fun refreshData() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
@@ -67,6 +68,7 @@ class PresenceSecurityViewModel(
     }
 
     fun updatePresence(state: String) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             when (val result = repository.updatePresence(homeId, state)) {
@@ -88,6 +90,7 @@ class PresenceSecurityViewModel(
     }
 
     fun changeSecurityMode(mode: String) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             when (val result = repository.changeSecurityMode(homeId, mode)) {

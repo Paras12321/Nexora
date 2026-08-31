@@ -1,6 +1,7 @@
 package com.nexora.app.data.remote
 
 import com.nexora.app.data.local.TokenManager
+import com.nexora.app.data.session.SessionRepository
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -9,7 +10,8 @@ import okhttp3.Response
  * Header format: Authorization: Token <token_value>
  */
 class AuthInterceptor(
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val sessionRepository: SessionRepository
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -17,17 +19,26 @@ class AuthInterceptor(
 
         // Do not override if Authorization header is explicitly provided
         if (originalRequest.header("Authorization") != null) {
-            return chain.proceed(originalRequest)
+            val response = chain.proceed(originalRequest)
+            if (response.code == 401) {
+                sessionRepository.onSessionExpired()
+            }
+            return response
         }
 
         val token = tokenManager.getToken()
-        return if (!token.isNullOrBlank()) {
-            val authenticatedRequest = originalRequest.newBuilder()
+        val request = if (!token.isNullOrBlank()) {
+            originalRequest.newBuilder()
                 .header("Authorization", "Token $token")
                 .build()
-            chain.proceed(authenticatedRequest)
         } else {
-            chain.proceed(originalRequest)
+            originalRequest
         }
+
+        val response = chain.proceed(request)
+        if (response.code == 401) {
+            sessionRepository.onSessionExpired()
+        }
+        return response
     }
 }

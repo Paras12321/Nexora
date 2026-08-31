@@ -34,6 +34,7 @@ class EnergyViewModel(
     }
 
     fun refreshData() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val billsResult = repository.getBills(homeId)
@@ -57,6 +58,7 @@ class EnergyViewModel(
     }
 
     fun submitBill(amount: Double, usage: Double, start: String, end: String) {
+        if (_uiState.value.isSubmitting) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSubmitting = true, error = null, submitSuccess = false)
             val request = CreateBillRequest(start, end, amount, usage)

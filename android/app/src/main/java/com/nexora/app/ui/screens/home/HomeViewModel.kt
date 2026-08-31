@@ -38,6 +38,7 @@ class HomeViewModel(
     }
 
     fun loadHomes() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             when (val result = homeRepository.getHomes()) {
@@ -78,8 +79,14 @@ class HomeViewModel(
     }
 
     fun loadHomeDetails(homeId: Int) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                errorMessage = null,
+                members = emptyList(),
+                rooms = emptyList()
+            )
             
             // Load members and rooms in parallel
             val membersResult = homeRepository.getHomeMembers(homeId)
@@ -110,6 +117,7 @@ class HomeViewModel(
             _uiState.value = _uiState.value.copy(errorMessage = "Home name cannot be empty.")
             return
         }
+        if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
@@ -137,6 +145,7 @@ class HomeViewModel(
             _uiState.value = _uiState.value.copy(errorMessage = "Invite code cannot be empty.")
             return
         }
+        if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
@@ -165,6 +174,7 @@ class HomeViewModel(
             _uiState.value = _uiState.value.copy(errorMessage = "Please enter a valid email address.")
             return
         }
+        if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
@@ -188,6 +198,7 @@ class HomeViewModel(
 
     fun removeMember(memberId: Int) {
         val selectedHome = _uiState.value.selectedHome ?: return
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             when (val result = homeRepository.removeMember(selectedHome.id, memberId)) {
@@ -208,6 +219,7 @@ class HomeViewModel(
 
     fun leaveHome() {
         val selectedHome = _uiState.value.selectedHome ?: return
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             when (val result = homeRepository.leaveHome(selectedHome.id)) {
@@ -233,6 +245,7 @@ class HomeViewModel(
             _uiState.value = _uiState.value.copy(errorMessage = "Room name cannot be empty.")
             return
         }
+        if (_uiState.value.isLoading) return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)

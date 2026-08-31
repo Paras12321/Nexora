@@ -40,6 +40,9 @@ class NexoraApp : Application() {
     lateinit var tokenManager: TokenManager
         private set
 
+    lateinit var sessionRepository: com.nexora.app.data.session.SessionRepository
+        private set
+
     lateinit var authRepository: AuthRepository
         private set
 
@@ -77,14 +80,15 @@ class NexoraApp : Application() {
         super.onCreate()
         
         tokenManager = EncryptedTokenManager(this)
+        sessionRepository = com.nexora.app.data.session.SessionRepository(tokenManager)
         
-        val authApiService = ApiClient.createService<AuthApiService>(tokenManager = tokenManager)
-        authRepository = AuthRepositoryImpl(authApiService, tokenManager)
+        val authApiService = ApiClient.createService<AuthApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
+        authRepository = AuthRepositoryImpl(authApiService, tokenManager, sessionRepository)
 
-        val homeApiService = ApiClient.createService<HomeApiService>(tokenManager = tokenManager)
+        val homeApiService = ApiClient.createService<HomeApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
         homeRepository = HomeRepositoryImpl(homeApiService)
 
-        val roomApiService = ApiClient.createService<RoomApiService>(tokenManager = tokenManager)
+        val roomApiService = ApiClient.createService<RoomApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
         roomRepository = RoomRepositoryImpl(roomApiService)
 
         googleHomeConfig = GoogleHomeConfig()
@@ -94,17 +98,17 @@ class NexoraApp : Application() {
         
         deviceRepository = GoogleHomeDeviceRepository(googleHomeAuthManager, googleHomeClientManager)
 
-        val presenceApiService = ApiClient.createService<PresenceApiService>(tokenManager = tokenManager)
-        val securityApiService = ApiClient.createService<SecurityApiService>(tokenManager = tokenManager)
+        val presenceApiService = ApiClient.createService<PresenceApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
+        val securityApiService = ApiClient.createService<SecurityApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
         presenceSecurityRepository = PresenceSecurityRepositoryImpl(presenceApiService, securityApiService)
 
-        val energyApiService = ApiClient.createService<EnergyApiService>(tokenManager = tokenManager)
+        val energyApiService = ApiClient.createService<EnergyApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
         energyRepository = EnergyRepositoryImpl(energyApiService)
 
-        val aiApiService = ApiClient.createService<AiApiService>(tokenManager = tokenManager)
+        val aiApiService = ApiClient.createService<AiApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
         aiRepository = AiRepositoryImpl(aiApiService)
 
-        val logApiService = ApiClient.createService<LogApiService>(tokenManager = tokenManager)
+        val logApiService = ApiClient.createService<LogApiService>(tokenManager = tokenManager, sessionRepository = sessionRepository)
         logRepository = LogRepositoryImpl(logApiService)
     }
 }

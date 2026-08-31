@@ -41,6 +41,7 @@ class RoomDetailViewModel(
     }
 
     fun loadRoomData() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
 
@@ -73,6 +74,7 @@ class RoomDetailViewModel(
     }
 
     fun assignMember(homeMemberId: Int) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             when (val result = roomRepository.assignRoomMember(homeId, roomId, homeMemberId)) {
@@ -94,6 +96,7 @@ class RoomDetailViewModel(
     }
 
     fun updatePreferences(newPreferences: Map<String, String>) {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             when (val result = roomRepository.setRoomPreferences(homeId, roomId, newPreferences)) {

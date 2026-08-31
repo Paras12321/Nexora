@@ -32,6 +32,7 @@ class DeviceViewModel(
     }
 
     fun fetchDevices() {
+        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             deviceRepository.getDevices().collectLatest { result ->
                 when (result) {
@@ -57,6 +58,7 @@ class DeviceViewModel(
     }
 
     fun executeAction(deviceId: String, capability: String, value: Any) {
+        if (_uiState.value.actionLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(actionLoading = true)
             val result = deviceRepository.executeAction(deviceId, capability, value)
