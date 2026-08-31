@@ -5,6 +5,7 @@ import com.nexora.app.data.model.DetailResponse
 import com.nexora.app.data.model.HomeDto
 import com.nexora.app.data.model.HomeMemberDto
 import com.nexora.app.data.model.InviteMemberRequest
+import com.nexora.app.data.model.JoinHomeRequest
 import com.nexora.app.data.model.UpdateHomeRequest
 import retrofit2.Response
 import retrofit2.http.Body

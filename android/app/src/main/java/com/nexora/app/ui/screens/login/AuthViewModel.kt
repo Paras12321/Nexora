@@ -3,8 +3,8 @@ package com.nexora.app.ui.screens.login
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nexora.app.data.remote.NetworkResult
-import com.nexora.app.data.remote.dto.LoginRequest
-import com.nexora.app.data.remote.dto.RegisterRequest
+import com.nexora.app.data.model.LoginRequest
+import com.nexora.app.data.model.RegisterRequest
 import com.nexora.app.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -18,13 +18,17 @@ data class ActivityLogDto(
 @Serializable
 data class DecisionLogDto(
     @SerialName("id") val id: Int,
-    @SerialName("timestamp") val timestamp: String,
-    @SerialName("source") val source: String,
-    @SerialName("reason") val reason: String,
-    @SerialName("proposed_action") val proposedAction: String,
+    @SerialName("timestamp") val timestamp: String = "",
+    @SerialName("source") val source: String = "system",
+    @SerialName("reason") val reason: String = "",
+    @SerialName("decision") val decision: String = "",
+    @SerialName("proposed_action") val proposedAction: String = "",
     @SerialName("actual_action") val actualAction: String? = null,
     @SerialName("result") val result: String? = null,
-    @SerialName("status") val status: String? = null // pending_approval, approved, rejected, executed
+    @SerialName("status") val status: String? = "pending_approval",
+    @SerialName("room") val roomId: Int? = null,
+    @SerialName("device") val deviceId: Int? = null,
+    @SerialName("resolved_at") val resolvedAt: String? = null
 )
 
 @Serializable

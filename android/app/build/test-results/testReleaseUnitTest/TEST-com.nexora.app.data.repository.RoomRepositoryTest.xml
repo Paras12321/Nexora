@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.nexora.app.data.repository.RoomRepositoryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-31T13:33:36.314Z" hostname="LAPTOP-TNNGLCM8" time="0.061">
+  <properties/>
+  <testcase name="getRooms returns list of RoomModels" classname="com.nexora.app.data.repository.RoomRepositoryTest" time="0.014"/>
+  <testcase name="assignRoomMember posts member_id and handles 400 when already assigned" classname="com.nexora.app.data.repository.RoomRepositoryTest" time="0.01"/>
+  <testcase name="setRoomPreferences updates preferences object and maps to domain" classname="com.nexora.app.data.repository.RoomRepositoryTest" time="0.037"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

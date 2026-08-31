@@ -69,9 +69,10 @@ class LogViewModel(
                 is NetworkResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = result.error.userFriendlyMessage
+                        error = result.error.message
                     )
                 }
+                else -> {}
             }
         }
     }

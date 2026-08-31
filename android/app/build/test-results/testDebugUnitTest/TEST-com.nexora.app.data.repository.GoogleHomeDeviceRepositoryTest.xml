@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-08-31T13:37:22.041Z" hostname="LAPTOP-TNNGLCM8" time="0.038">
+  <properties/>
+  <testcase name="testGetDevicesPermissionGrantedEmitsMappedDevices" classname="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" time="0.019"/>
+  <testcase name="testGetDevicesPermissionRevokedEmitsError" classname="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" time="0.004"/>
+  <testcase name="testExecuteActionOnOfflineDeviceFails" classname="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" time="0.003"/>
+  <testcase name="testGetDevicesPermissionDeniedEmitsError" classname="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" time="0.003"/>
+  <testcase name="testExecuteActionWhenPermissionGrantedSuccess" classname="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" time="0.003"/>
+  <testcase name="testExecuteActionWhenPermissionDeniedFails" classname="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" time="0.002"/>
+  <testcase name="testGetDevicesEmptyHomeEmitsEmptyList" classname="com.nexora.app.data.repository.GoogleHomeDeviceRepositoryTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

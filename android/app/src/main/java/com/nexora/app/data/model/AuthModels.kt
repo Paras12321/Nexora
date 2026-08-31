@@ -7,9 +7,9 @@ import kotlinx.serialization.Serializable
 data class UserDto(
     val id: Int,
     val email: String,
-    @SerialName("first_name") val firstName: String,
-    @SerialName("last_name") val lastName: String,
-    @SerialName("date_joined") val dateJoined: String
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("last_name") val lastName: String = "",
+    @SerialName("date_joined") val dateJoined: String = ""
 )
 
 @Serializable
@@ -39,5 +39,5 @@ data class PasswordResetRequest(
 
 @Serializable
 data class DetailResponse(
-    val detail: String
+    @SerialName("detail") val detail: String = ""
 )

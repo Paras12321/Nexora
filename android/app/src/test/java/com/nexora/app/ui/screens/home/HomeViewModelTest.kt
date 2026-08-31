@@ -5,6 +5,7 @@ import com.nexora.app.data.repository.HomeRepository
 import com.nexora.app.data.repository.RoomRepository
 import com.nexora.app.domain.model.HomeMemberModel
 import com.nexora.app.domain.model.HomeModel
+import com.nexora.app.domain.model.RoomMemberModel
 import com.nexora.app.domain.model.RoomModel
 import com.nexora.app.domain.model.RoomPreferenceModel
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +54,7 @@ class HomeViewModelTest {
 
     @Test
     fun `createHome with blank name sets validation error`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.createHome("   ")
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -62,6 +64,7 @@ class HomeViewModelTest {
 
     @Test
     fun `inviteMember with invalid email sets validation error`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.inviteMember("notanemail")
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -100,6 +103,11 @@ class FakeHomeRepository : HomeRepository {
     }
     override suspend fun removeMember(homeId: Int, memberId: Int): NetworkResult<Unit> = NetworkResult.Success(Unit)
     override suspend fun leaveHome(homeId: Int): NetworkResult<String> = NetworkResult.Success("Left home")
+    override suspend fun joinHome(inviteCode: String): NetworkResult<HomeModel> {
+        val joined = HomeModel(homes.size + 1, "Joined Home", 10, "owner@example.com", "2026-08-31", "2026-08-31")
+        homes.add(joined)
+        return NetworkResult.Success(joined)
+    }
 }
 
 class FakeRoomRepository : RoomRepository {

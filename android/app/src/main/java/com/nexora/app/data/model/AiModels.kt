@@ -37,18 +37,6 @@ data class ProposedActionDto(
     @SerialName("reason") val reason: String = ""
 )
 
-@Serializable
-data class DecisionLogDto(
-    @SerialName("id") val id: Int,
-    @SerialName("source") val source: String = "system",
-    @SerialName("room") val roomId: Int? = null,
-    @SerialName("device") val deviceId: Int? = null,
-    @SerialName("decision") val decision: String,
-    @SerialName("reason") val reason: String = "",
-    @SerialName("status") val status: String = "pending_approval",
-    @SerialName("timestamp") val timestamp: String = "",
-    @SerialName("resolved_at") val resolvedAt: String? = null
-)
 
 @Serializable
 data class DecisionApprovalRequest(

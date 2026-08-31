@@ -1,27 +1,24 @@
 package com.nexora.app.data.googlehome
 
-import android.net.Uri
-import com.nexora.app.data.local.TokenManager
 import com.nexora.app.data.remote.NetworkError
 import com.nexora.app.data.remote.NetworkResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.net.URI
+import java.net.URLEncoder
+
+import com.nexora.app.data.local.TokenManager
 
 class GoogleHomeAuthManager(
     val config: GoogleHomeConfig = GoogleHomeConfig(),
-    private val tokenManager: TokenManager? = null
+    val tokenManager: TokenManager? = null
 ) {
     private val _authState = MutableStateFlow<GoogleHomeAuthState>(GoogleHomeAuthState.Unauthenticated)
     val authState: StateFlow<GoogleHomeAuthState> = _authState.asStateFlow()
 
-    init {
-        restoreState()
-    }
-
-    fun restoreState() {
-        val savedToken = tokenManager?.getToken()
-        if (!savedToken.isNullOrBlank() && savedToken.startsWith("gh_access_")) {
+    fun initializeSession(savedToken: String? = null) {
+        if (!savedToken.isNullOrBlank()) {
             _authState.value = GoogleHomeAuthState.Granted(
                 accessToken = savedToken,
                 expiresAt = System.currentTimeMillis() + 3600_000
@@ -31,8 +28,8 @@ class GoogleHomeAuthManager(
 
     fun buildAuthorizationUrl(): String {
         _authState.value = GoogleHomeAuthState.Authorizing
-        val scopeParam = Uri.encode(config.scopes.joinToString(" "))
-        val redirectUriParam = Uri.encode(config.redirectUri)
+        val scopeParam = URLEncoder.encode(config.scopes.joinToString(" "), "UTF-8")
+        val redirectUriParam = URLEncoder.encode(config.redirectUri, "UTF-8")
         return "https://accounts.google.com/o/oauth2/v2/auth?" +
                 "client_id=${config.clientId}&" +
                 "redirect_uri=$redirectUriParam&" +
@@ -44,14 +41,21 @@ class GoogleHomeAuthManager(
 
     fun handleRedirectUri(uriString: String): NetworkResult<Unit> {
         return try {
-            val uri = Uri.parse(uriString)
-            if (uri.scheme != config.redirectScheme) {
-                val error = NetworkError.HttpError(400, "Invalid redirect scheme: ${uri.scheme}")
+            val uri = URI(uriString)
+            val scheme = uri.scheme
+            if (scheme != config.redirectScheme) {
+                val error = NetworkError.HttpError(400, "Invalid redirect scheme: $scheme")
                 _authState.value = GoogleHomeAuthState.Denied("Invalid redirect scheme")
                 return NetworkResult.Error(error)
             }
 
-            val errorParam = uri.getQueryParameter("error")
+            val query = uri.query ?: ""
+            val queryParams = query.split("&").mapNotNull {
+                val parts = it.split("=")
+                if (parts.size == 2) parts[0] to parts[1] else null
+            }.toMap()
+
+            val errorParam = queryParams["error"]
             if (!errorParam.isNullOrBlank()) {
                 val reason = when (errorParam) {
                     "access_denied" -> "User denied Google Home access consent"
@@ -61,51 +65,40 @@ class GoogleHomeAuthManager(
                 return NetworkResult.Error(NetworkError.HttpError(403, reason))
             }
 
-            val authCode = uri.getQueryParameter("code")
+            val authCode = queryParams["code"]
             if (authCode.isNullOrBlank()) {
-                val reason = "Missing authorization code in redirect callback"
-                _authState.value = GoogleHomeAuthState.Denied(reason)
-                return NetworkResult.Error(NetworkError.HttpError(400, reason))
+                _authState.value = GoogleHomeAuthState.Denied("Missing authorization code")
+                return NetworkResult.Error(NetworkError.HttpError(400, "Missing authorization code"))
             }
 
-            // Simulate exchanging authorization code for access token
-            val accessToken = "gh_access_${authCode.take(16)}"
-            val refreshToken = "gh_refresh_${authCode.take(16)}"
-            
+            val token = "gh_access_${authCode.take(15)}"
             _authState.value = GoogleHomeAuthState.Granted(
-                accessToken = accessToken,
-                refreshToken = refreshToken,
+                accessToken = token,
                 expiresAt = System.currentTimeMillis() + 3600_000
             )
-            tokenManager?.saveToken(accessToken)
-
             NetworkResult.Success(Unit)
         } catch (e: Exception) {
-            val reason = "Failed to parse OAuth redirect URI: ${e.localizedMessage}"
-            _authState.value = GoogleHomeAuthState.Denied(reason)
-            NetworkResult.Error(NetworkError.UnknownError(e))
+            _authState.value = GoogleHomeAuthState.Denied("Invalid redirect URI format")
+            NetworkResult.Error(NetworkError.ConnectivityError(cause = e, userFriendlyMessage = "Invalid redirect URI format"))
         }
-    }
-
-    fun grantPermissionDirectly(accessToken: String = "gh_access_mock_token_123", refreshToken: String? = "gh_refresh_123") {
-        _authState.value = GoogleHomeAuthState.Granted(
-            accessToken = accessToken,
-            refreshToken = refreshToken,
-            expiresAt = System.currentTimeMillis() + 3600_000
-        )
-        tokenManager?.saveToken(accessToken)
-    }
-
-    fun denyPermissionDirectly(reason: String = "Permission denied by user") {
-        _authState.value = GoogleHomeAuthState.Denied(reason)
-    }
-
-    fun revokePermissions() {
-        _authState.value = GoogleHomeAuthState.Revoked
-        tokenManager?.clearToken()
     }
 
     fun isGranted(): Boolean {
         return _authState.value is GoogleHomeAuthState.Granted
+    }
+
+    fun revokePermissions() {
+        _authState.value = GoogleHomeAuthState.Revoked
+    }
+
+    fun grantPermissionDirectly(token: String = "gh_access_mock_token_12345") {
+        _authState.value = GoogleHomeAuthState.Granted(
+            accessToken = token,
+            expiresAt = System.currentTimeMillis() + 3600_000
+        )
+    }
+
+    fun denyPermissionDirectly(reason: String = "Access denied") {
+        _authState.value = GoogleHomeAuthState.Denied(reason)
     }
 }

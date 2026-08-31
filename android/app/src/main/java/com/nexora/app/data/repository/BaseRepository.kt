@@ -48,23 +48,66 @@ abstract class BaseRepository {
                     )
                 )
             }
-        } catch (e: SerializationException) {
-            NetworkResult.Error(NetworkError.SerializationError(cause = e))
         } catch (e: IOException) {
-            NetworkResult.Error(NetworkError.ConnectivityError(cause = e))
-        } catch (e: Exception) {
-            NetworkResult.Error(NetworkError.UnknownError(cause = e))
+            println("DEBUG_EXCEPTION: IOException: ${e.message}")
+            return NetworkResult.Error(
+                NetworkError.ConnectivityError(
+                    cause = e,
+                    userFriendlyMessage = "Unable to connect to server. Please check if backend server is running."
+                )
+            )
+        } catch (e: SerializationException) {
+            println("DEBUG_EXCEPTION: SerializationException: ${e.message}")
+            return NetworkResult.Error(
+                NetworkError.SerializationError(
+                    cause = e,
+                    userFriendlyMessage = "Failed to parse server response."
+                )
+            )
+        } catch (e: Throwable) {
+            println("DEBUG_EXCEPTION: ${e.javaClass.name}: ${e.message}")
+            return NetworkResult.Error(
+                NetworkError.UnknownError(
+                    cause = e,
+                    userFriendlyMessage = e.message ?: "An unexpected error occurred."
+                )
+            )
         }
     }
 
     /**
      * Attempts to parse backend error payload JSON into standard error message string.
+     * Supports both global detail messages and field-specific validation error dictionaries from DRF.
      */
     private fun parseErrorDetail(errorBody: String?): String? {
         if (errorBody.isNullOrBlank()) return null
         return try {
-            val errorResponse = ApiClient.defaultJson.decodeFromString<ApiErrorResponse>(errorBody)
-            errorResponse.detail ?: errorResponse.message ?: errorResponse.error
+            val jsonElement = ApiClient.defaultJson.parseToJsonElement(errorBody)
+            if (jsonElement is kotlinx.serialization.json.JsonObject) {
+                // 1. Check direct detail / message / error keys first
+                jsonElement["detail"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) return it.content }
+                jsonElement["message"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) return it.content }
+                jsonElement["error"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) return it.content }
+
+                // 2. Parse field validation errors (e.g. {"password": ["Error..."], "email": ["..."]})
+                val fieldErrors = mutableListOf<String>()
+                for ((key, value) in jsonElement) {
+                    if (value is kotlinx.serialization.json.JsonArray) {
+                        val msgs = value.filterIsInstance<kotlinx.serialization.json.JsonPrimitive>().map { it.content }
+                        if (msgs.isNotEmpty()) {
+                            val fieldName = key.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                            fieldErrors.add("$fieldName: ${msgs.joinToString(", ")}")
+                        }
+                    } else if (value is kotlinx.serialization.json.JsonPrimitive && value.isString) {
+                        val fieldName = key.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                        fieldErrors.add("$fieldName: ${value.content}")
+                    }
+                }
+                if (fieldErrors.isNotEmpty()) {
+                    return fieldErrors.joinToString("\n")
+                }
+            }
+            null
         } catch (_: Exception) {
             null
         }

@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "com.nexora.app-debug-52:/mipmap_ic_launcher_round.xml.flat",
+        "source": "com.nexora.app-main-54:/mipmap/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.nexora.app-debug-52:/mipmap_ic_launcher.xml.flat",
+        "source": "com.nexora.app-main-54:/mipmap/ic_launcher.xml"
+    },
+    {
+        "merged": "com.nexora.app-debug-52:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.nexora.app-main-54:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.nexora.app-debug-52:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.nexora.app-main-54:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.nexora.app-debug-52:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.nexora.app-main-54:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.nexora.app-debug-52:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.nexora.app-main-54:/drawable/ic_launcher_background.xml"
+    }
+]

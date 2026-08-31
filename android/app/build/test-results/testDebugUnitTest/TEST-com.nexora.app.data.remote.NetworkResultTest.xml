@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.nexora.app.data.remote.NetworkResultTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-31T13:37:22.033Z" hostname="LAPTOP-TNNGLCM8" time="0.004">
+  <properties/>
+  <testcase name="onSuccess and onError callbacks execute appropriately" classname="com.nexora.app.data.remote.NetworkResultTest" time="0.001"/>
+  <testcase name="error result holds error and handles fallbacks" classname="com.nexora.app.data.remote.NetworkResultTest" time="0.001"/>
+  <testcase name="success result holds data and maps correctly" classname="com.nexora.app.data.remote.NetworkResultTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

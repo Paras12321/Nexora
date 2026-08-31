@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.nexora.app.data.repository.AiRepositoryTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-08-31T13:33:36.090Z" hostname="LAPTOP-TNNGLCM8" time="0.05">
+  <properties/>
+  <testcase name="testTimeoutErrorHandling" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.005"/>
+  <testcase name="testEmptyDecisionLogsHandling" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.003"/>
+  <testcase name="testAnalyzeMessageSuccess" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.008"/>
+  <testcase name="testHttpError403ForbiddenHandling" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.014"/>
+  <testcase name="testGetDecisionLogsSuccess" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.003"/>
+  <testcase name="testApproveDecisionSuccess" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.004"/>
+  <testcase name="testGetBillAnalysisSuccessAndFormatting" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.011"/>
+  <testcase name="testRejectDecisionSuccess" classname="com.nexora.app.data.repository.AiRepositoryTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

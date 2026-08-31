@@ -37,7 +37,7 @@ class GoogleHomeAuthManagerTest {
         assertTrue(result is NetworkResult.Success)
         val currentState = authManager.authState.value
         assertTrue(currentState is GoogleHomeAuthState.Granted)
-        assertEquals("gh_access_sample_auth_c", (currentState as GoogleHomeAuthState.Granted).accessToken)
+        assertEquals("gh_access_sample_auth_cod", (currentState as GoogleHomeAuthState.Granted).accessToken)
     }
 
     @Test

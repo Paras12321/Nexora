@@ -12,6 +12,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.nexora.app.NexoraApp
+import com.nexora.app.ui.screens.ai.AiInsightsScreen
+import com.nexora.app.ui.screens.ai.AiViewModel
+import com.nexora.app.ui.screens.ai.AiViewModelFactory
 import com.nexora.app.ui.screens.device.DeviceDetailScreen
 import com.nexora.app.ui.screens.device.DeviceViewModel
 import com.nexora.app.ui.screens.device.DeviceViewModelFactory
@@ -22,6 +25,10 @@ import com.nexora.app.ui.screens.forgot_password.ForgotPasswordScreen
 import com.nexora.app.ui.screens.home.HomeScreen
 import com.nexora.app.ui.screens.home.HomeViewModel
 import com.nexora.app.ui.screens.home.HomeViewModelFactory
+import com.nexora.app.ui.screens.log.ActivityLogScreen
+import com.nexora.app.ui.screens.log.DecisionLogScreen
+import com.nexora.app.ui.screens.log.LogViewModel
+import com.nexora.app.ui.screens.log.LogViewModelFactory
 import com.nexora.app.ui.screens.login.AuthViewModel
 import com.nexora.app.ui.screens.login.AuthViewModelFactory
 import com.nexora.app.ui.screens.login.LoginScreen
@@ -30,14 +37,6 @@ import com.nexora.app.ui.screens.room.RoomDetailScreen
 import com.nexora.app.ui.screens.room.RoomDetailViewModel
 import com.nexora.app.ui.screens.room.RoomDetailViewModelFactory
 import com.nexora.app.ui.screens.splash.SplashScreen
-
-import com.nexora.app.ui.screens.ai.AiInsightsScreen
-import com.nexora.app.ui.screens.ai.AiViewModel
-import com.nexora.app.ui.screens.ai.AiViewModelFactory
-import com.nexora.app.ui.screens.log.ActivityLogScreen
-import com.nexora.app.ui.screens.log.DecisionLogScreen
-import com.nexora.app.ui.screens.log.LogViewModel
-import com.nexora.app.ui.screens.log.LogViewModelFactory
 
 object Routes {
     const val SPLASH = "splash"
@@ -92,6 +91,11 @@ fun NexoraNavGraph(navController: NavHostController) {
             app.sessionRepository.resetSessionExpired()
         }
     }
+
+    NavHost(
+        navController = navController,
+        startDestination = Routes.SPLASH
+    ) {
         composable(Routes.SPLASH) {
             SplashScreen(onSplashFinished = { isLoggedIn ->
                 val destination = if (isLoggedIn) Routes.HOME else Routes.LOGIN

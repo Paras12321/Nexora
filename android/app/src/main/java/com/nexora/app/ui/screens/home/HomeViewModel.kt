@@ -170,7 +170,7 @@ class HomeViewModel(
     fun inviteMember(email: String) {
         val selectedHome = _uiState.value.selectedHome ?: return
         val trimmedEmail = email.trim()
-        if (trimmedEmail.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches()) {
+        if (trimmedEmail.isBlank() || !trimmedEmail.contains("@") || !trimmedEmail.contains(".")) {
             _uiState.value = _uiState.value.copy(errorMessage = "Please enter a valid email address.")
             return
         }

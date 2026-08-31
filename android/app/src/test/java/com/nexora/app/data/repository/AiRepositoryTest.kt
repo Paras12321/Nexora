@@ -8,7 +8,7 @@ import com.nexora.app.data.model.DecisionApprovalResponse
 import com.nexora.app.data.model.DecisionLogDto
 import com.nexora.app.data.model.NaturalLanguageAiResponse
 import kotlinx.coroutines.test.runTest
-import okhttp3.MediaType.Companion.toMediaTypeValue
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -130,7 +130,7 @@ class FakeAiApiService : AiApiService {
     override suspend fun analyzeMessage(request: com.nexora.app.data.model.NaturalLanguageAiRequest): Response<NaturalLanguageAiResponse> {
         if (shouldThrowException) throw IOException("Connection timeout")
         if (shouldReturnHttpError) {
-            return Response.error(errorCode, "Forbidden".toResponseBody("application/json".toMediaTypeValue()))
+            return Response.error(errorCode, "Forbidden".toResponseBody("application/json".toMediaTypeOrNull()))
         }
         val response = NaturalLanguageAiResponse(
             message = "I'll turn off the bedroom light for you.",
@@ -146,7 +146,7 @@ class FakeAiApiService : AiApiService {
     override suspend fun getAiLegacyAnalysis(request: com.nexora.app.data.model.AiAnalysisRequest): Response<AiAnalysisResponse> {
         if (shouldThrowException) throw IOException("Network timeout")
         if (shouldReturnHttpError) {
-            return Response.error(errorCode, "Internal error".toResponseBody("application/json".toMediaTypeValue()))
+            return Response.error(errorCode, "Internal error".toResponseBody("application/json".toMediaTypeOrNull()))
         }
         val response = AiAnalysisResponse(
             status = "ok",
@@ -161,7 +161,7 @@ class FakeAiApiService : AiApiService {
     override suspend fun getDecisionLogs(homeId: Int): Response<List<DecisionLogDto>> {
         if (shouldThrowException) throw IOException("Timeout")
         if (shouldReturnHttpError) {
-            return Response.error(errorCode, "Error".toResponseBody("application/json".toMediaTypeValue()))
+            return Response.error(errorCode, "Error".toResponseBody("application/json".toMediaTypeOrNull()))
         }
         if (emptyLogs) {
             return Response.success(emptyList())
@@ -186,7 +186,7 @@ class FakeAiApiService : AiApiService {
     ): Response<DecisionApprovalResponse> {
         if (shouldThrowException) throw IOException("Timeout")
         if (shouldReturnHttpError) {
-            return Response.error(errorCode, "Error".toResponseBody("application/json".toMediaTypeValue()))
+            return Response.error(errorCode, "Error".toResponseBody("application/json".toMediaTypeOrNull()))
         }
         val message = if (request.action == "approve") "Decision approved and executed." else "Decision rejected."
         return Response.success(DecisionApprovalResponse(detail = message))

@@ -85,6 +85,7 @@ class PresenceSecurityViewModel(
                         error = "Failed to update presence"
                     )
                 }
+                else -> {}
             }
         }
     }
@@ -107,6 +108,7 @@ class PresenceSecurityViewModel(
                         error = "Failed to change security mode"
                     )
                 }
+                else -> {}
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.nexora.app.data.remote
 
 import com.nexora.app.data.local.InMemoryTokenManager
+import com.nexora.app.data.session.SessionRepository
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.mockwebserver.MockResponse
@@ -29,8 +30,9 @@ class AuthInterceptorTest {
     @Test
     fun `attaches token header when token is present`() {
         val tokenManager = InMemoryTokenManager("sample_token_123")
+        val sessionRepository = SessionRepository(tokenManager)
         val client = OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(tokenManager))
+            .addInterceptor(AuthInterceptor(tokenManager, sessionRepository))
             .build()
 
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
@@ -48,8 +50,9 @@ class AuthInterceptorTest {
     @Test
     fun `does not attach header when token is null`() {
         val tokenManager = InMemoryTokenManager(null)
+        val sessionRepository = SessionRepository(tokenManager)
         val client = OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(tokenManager))
+            .addInterceptor(AuthInterceptor(tokenManager, sessionRepository))
             .build()
 
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
@@ -67,8 +70,9 @@ class AuthInterceptorTest {
     @Test
     fun `preserves existing authorization header`() {
         val tokenManager = InMemoryTokenManager("sample_token_123")
+        val sessionRepository = SessionRepository(tokenManager)
         val client = OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(tokenManager))
+            .addInterceptor(AuthInterceptor(tokenManager, sessionRepository))
             .build()
 
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
