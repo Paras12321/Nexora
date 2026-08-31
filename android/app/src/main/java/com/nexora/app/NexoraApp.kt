@@ -31,6 +31,9 @@ import com.nexora.app.data.repository.GoogleHomeDeviceRepository
 import com.nexora.app.data.remote.AiApiService
 import com.nexora.app.data.repository.AiRepository
 import com.nexora.app.data.repository.AiRepositoryImpl
+import com.nexora.app.data.remote.LogApiService
+import com.nexora.app.data.repository.LogRepository
+import com.nexora.app.data.repository.LogRepositoryImpl
 
 class NexoraApp : Application() {
 
@@ -67,6 +70,9 @@ class NexoraApp : Application() {
     lateinit var aiRepository: AiRepository
         private set
 
+    lateinit var logRepository: LogRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         
@@ -97,5 +103,8 @@ class NexoraApp : Application() {
 
         val aiApiService = ApiClient.createService<AiApiService>(tokenManager = tokenManager)
         aiRepository = AiRepositoryImpl(aiApiService)
+
+        val logApiService = ApiClient.createService<LogApiService>(tokenManager = tokenManager)
+        logRepository = LogRepositoryImpl(logApiService)
     }
 }

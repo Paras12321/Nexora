@@ -31,6 +31,10 @@ import com.nexora.app.ui.screens.splash.SplashScreen
 import com.nexora.app.ui.screens.ai.AiInsightsScreen
 import com.nexora.app.ui.screens.ai.AiViewModel
 import com.nexora.app.ui.screens.ai.AiViewModelFactory
+import com.nexora.app.ui.screens.log.ActivityLogScreen
+import com.nexora.app.ui.screens.log.DecisionLogScreen
+import com.nexora.app.ui.screens.log.LogViewModel
+import com.nexora.app.ui.screens.log.LogViewModelFactory
 
 object Routes {
     const val SPLASH = "splash"
@@ -42,6 +46,8 @@ object Routes {
     const val DEVICE_DETAIL = "device_detail/{deviceId}"
     const val ENERGY = "energy/{homeId}"
     const val AI_INSIGHTS = "ai_insights/{homeId}"
+    const val ACTIVITY_LOG = "activity_log/{homeId}"
+    const val DECISION_LOG = "decision_log/{homeId}"
 
     fun buildRoomDetailRoute(homeId: Int, roomId: Int): String {
         return "room_detail/$homeId/$roomId"
@@ -57,6 +63,14 @@ object Routes {
 
     fun buildAiInsightsRoute(homeId: Int): String {
         return "ai_insights/$homeId"
+    }
+
+    fun buildActivityLogRoute(homeId: Int): String {
+        return "activity_log/$homeId"
+    }
+
+    fun buildDecisionLogRoute(homeId: Int): String {
+        return "decision_log/$homeId"
     }
 }
 
@@ -132,6 +146,12 @@ fun NexoraNavGraph(navController: NavHostController) {
                 },
                 onNavigateToAiInsights = { homeId ->
                     navController.navigate(Routes.buildAiInsightsRoute(homeId))
+                },
+                onNavigateToActivityLog = { homeId ->
+                    navController.navigate(Routes.buildActivityLogRoute(homeId))
+                },
+                onNavigateToDecisionLog = { homeId ->
+                    navController.navigate(Routes.buildDecisionLogRoute(homeId))
                 }
             )
         }
@@ -204,6 +224,40 @@ fun NexoraNavGraph(navController: NavHostController) {
             )
             AiInsightsScreen(
                 viewModel = aiViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(
+            route = Routes.ACTIVITY_LOG,
+            arguments = listOf(
+                navArgument("homeId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val homeId = backStackEntry.arguments?.getInt("homeId") ?: 0
+            val logViewModel: LogViewModel = viewModel(
+                factory = LogViewModelFactory(homeId, app.logRepository)
+            )
+            ActivityLogScreen(
+                viewModel = logViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(
+            route = Routes.DECISION_LOG,
+            arguments = listOf(
+                navArgument("homeId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val homeId = backStackEntry.arguments?.getInt("homeId") ?: 0
+            val logViewModel: LogViewModel = viewModel(
+                factory = LogViewModelFactory(homeId, app.logRepository)
+            )
+            DecisionLogScreen(
+                viewModel = logViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
