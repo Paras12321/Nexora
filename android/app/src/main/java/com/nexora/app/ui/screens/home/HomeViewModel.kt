@@ -131,6 +131,33 @@ class HomeViewModel(
         }
     }
 
+    fun joinHome(inviteCode: String) {
+        val trimmedCode = inviteCode.trim()
+        if (trimmedCode.isBlank()) {
+            _uiState.value = _uiState.value.copy(errorMessage = "Invite code cannot be empty.")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            when (val result = homeRepository.joinHome(trimmedCode)) {
+                is NetworkResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        userFeedbackMessage = "Joined home '${result.data.name}' successfully!"
+                    )
+                    loadHomes()
+                }
+                is NetworkResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = formatErrorMessage(result.error)
+                    )
+                }
+                is NetworkResult.Loading -> {}
+            }
+        }
+    }
+
     fun inviteMember(email: String) {
         val selectedHome = _uiState.value.selectedHome ?: return
         val trimmedEmail = email.trim()

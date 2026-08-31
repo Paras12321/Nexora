@@ -67,6 +67,7 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showCreateHomeDialog by remember { mutableStateOf(false) }
+    var showJoinHomeDialog by remember { mutableStateOf(false) }
     var showInviteMemberDialog by remember { mutableStateOf(false) }
     var showCreateRoomDialog by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -119,6 +120,13 @@ fun HomeScreen(
                                 onClick = {
                                     isDropdownExpanded = false
                                     showCreateHomeDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("→ Join Home with Code", color = MaterialTheme.colorScheme.primary) },
+                                onClick = {
+                                    isDropdownExpanded = false
+                                    showJoinHomeDialog = true
                                 }
                             )
                         }
@@ -178,6 +186,10 @@ fun HomeScreen(
                         Button(onClick = { showCreateHomeDialog = true }) {
                             Text("Create a Home")
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(onClick = { showJoinHomeDialog = true }) {
+                            Text("Join a Home with Code")
+                        }
                     }
                 }
             } else {
@@ -223,6 +235,16 @@ fun HomeScreen(
             onConfirm = { name ->
                 viewModel.createHome(name)
                 showCreateHomeDialog = false
+            }
+        )
+    }
+
+    if (showJoinHomeDialog) {
+        JoinHomeDialog(
+            onDismiss = { showJoinHomeDialog = false },
+            onConfirm = { code ->
+                viewModel.joinHome(code)
+                showJoinHomeDialog = false
             }
         )
     }
@@ -395,6 +417,41 @@ fun CreateHomeDialog(
 }
 
 @Composable
+fun JoinHomeDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (code: String) -> Unit
+) {
+    var inviteCode by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Join Home") },
+        text = {
+            OutlinedTextField(
+                value = inviteCode,
+                onValueChange = { inviteCode = it },
+                label = { Text("Invite Code") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(inviteCode) },
+                enabled = inviteCode.isNotBlank()
+            ) {
+                Text("Join")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
 fun InviteMemberDialog(
     onDismiss: () -> Unit,
     onConfirm: (email: String) -> Unit
@@ -419,6 +476,41 @@ fun InviteMemberDialog(
                 enabled = email.isNotBlank()
             ) {
                 Text("Invite")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun JoinHomeDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (code: String) -> Unit
+) {
+    var inviteCode by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Join Home") },
+        text = {
+            OutlinedTextField(
+                value = inviteCode,
+                onValueChange = { inviteCode = it },
+                label = { Text("Invite Code") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(inviteCode) },
+                enabled = inviteCode.isNotBlank()
+            ) {
+                Text("Join")
             }
         },
         dismissButton = {
@@ -463,6 +555,41 @@ fun CreateRoomDialog(
                 enabled = name.isNotBlank()
             ) {
                 Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun JoinHomeDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (code: String) -> Unit
+) {
+    var inviteCode by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Join Home") },
+        text = {
+            OutlinedTextField(
+                value = inviteCode,
+                onValueChange = { inviteCode = it },
+                label = { Text("Invite Code") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(inviteCode) },
+                enabled = inviteCode.isNotBlank()
+            ) {
+                Text("Join")
             }
         },
         dismissButton = {

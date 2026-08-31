@@ -19,6 +19,7 @@ interface HomeRepository {
     suspend fun inviteMember(homeId: Int, email: String): NetworkResult<HomeMemberModel>
     suspend fun removeMember(homeId: Int, memberId: Int): NetworkResult<Unit>
     suspend fun leaveHome(homeId: Int): NetworkResult<String>
+    suspend fun joinHome(inviteCode: String): NetworkResult<HomeModel>
 }
 
 class HomeRepositoryImpl(
@@ -66,5 +67,10 @@ class HomeRepositoryImpl(
     override suspend fun leaveHome(homeId: Int): NetworkResult<String> {
         val result = safeApiCall { homeApiService.leaveHome(homeId) }
         return result.map { it.detail }
+    }
+
+    override suspend fun joinHome(inviteCode: String): NetworkResult<HomeModel> {
+        val result = safeApiCall { homeApiService.joinHome(com.nexora.app.data.model.JoinHomeRequest(inviteCode)) }
+        return result.map { it.toDomain() }
     }
 }

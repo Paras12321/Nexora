@@ -42,6 +42,11 @@ data class InviteMemberRequest(
 )
 
 @Serializable
+data class JoinHomeRequest(
+    @SerialName("invite_code") val inviteCode: String
+)
+
+@Serializable
 data class DetailResponse(
     @SerialName("detail") val detail: String
 )

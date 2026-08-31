@@ -51,4 +51,7 @@ interface HomeApiService {
 
     @POST("homes/{home_id}/leave/")
     suspend fun leaveHome(@Path("home_id") homeId: Int): Response<DetailResponse>
+
+    @POST("homes/join/")
+    suspend fun joinHome(@Body body: JoinHomeRequest): Response<HomeDto>
 }
