@@ -203,8 +203,79 @@ Submit a new electricity bill.
 ## AI Analysis
 
 ### POST /api/ai/analyze/
-Analyze a home context using the configured cloud AI provider abstraction.
-Requires Auth.
+Analyze a natural language request from the user using the configured AI provider.
+
+**Current Provider:** Mock (deterministic, no API credentials required)
+
+**Request Body:**
+```json
+{
+  "message": "Turn off the bedroom light",
+  "home_id": 1
+}
+```
+
+**Parameters:**
+- `message` (required, string): Natural language request or query from user
+- `home_id` (optional, integer): Scopes the request to a specific home. If not provided, uses the user's primary home.
+
+**Response (200 OK):**
+```json
+{
+  "message": "I'll turn off the bedroom light for you.",
+  "intent": "device_control",
+  "confidence": 0.87,
+  "entities": [
+    {
+      "type": "action",
+      "name": "turn_off",
+      "id": null
+    }
+  ],
+  "proposed_actions": [
+    {
+      "action_type": "turn_off",
+      "device_id": 5,
+      "room_id": 2,
+      "parameters": {},
+      "reason": "User requested to turn off this device."
+    }
+  ],
+  "policy_status": "requires_confirmation",
+  "requires_confirmation": true,
+  "provider": "mock",
+  "decision_log_id": null
+}
+```
+
+**Response Fields:**
+- `message`: User-facing response text
+- `intent`: Recognized intent type (`information_query`, `device_control`, `automation_query`, `ambiguous`, `unsupported`)
+- `confidence`: 0.0-1.0 confidence level of the analysis
+- `entities`: Recognized entities (devices, rooms, actions)
+- `proposed_actions`: Structured actions the AI recommends (device_id, action_type, parameters)
+- `policy_status`: `approved`, `requires_confirmation`, `rejected`, or `informational`
+- `requires_confirmation`: Boolean indicating if user must approve before action executes
+- `provider`: Name of the AI provider (currently "mock")
+- `decision_log_id`: If an approval-gated decision was created, its ID
+
+**Error Responses:**
+- `400 Bad Request`: Missing or invalid message
+- `401 Unauthorized`: No valid token provided
+- `403 Forbidden`: User does not have access to the specified home
+- `500 Internal Server Error`: AI service unavailable
+
+**Notes:**
+- All requests must be authenticated with a valid token
+- The AI layer cannot bypass policy/safety checks
+- Sensitive actions (lock/unlock/disarm/arm) automatically require confirmation
+- All AI analyses are logged for audit purposes
+- Django remains the authority for database access and action authorization
+
+### POST /api/ai/legacy/analyze/
+Legacy endpoint for template-based AI analysis (energy reports, bill analysis, etc.)
+
+**Deprecated:** New clients should use `POST /api/ai/analyze/` instead. This endpoint maintains backward compatibility with existing energy analysis workflows.
 
 **Request Body:**
 ```json
@@ -231,10 +302,12 @@ Requires Auth.
 }
 ```
 
-Notes:
-- `prompt_type` must be one of the supported AI task types.
-- Provider errors are converted to a safe application-level response instead of raw provider errors.
-- If the result is approval-gated, the backend writes a pending `DecisionLog` entry and must not auto-execute consequential actions.
+**Supported prompt_type values:**
+- `bill_analysis`: Analyze electricity bill and trends
+- `energy_explanation`: Explain energy usage patterns
+- `anomaly_explanation`: Explain unusual readings
+- `automation_recommendation`: Recommend automation rules
+- `home_insights`: Provide general home insights
 
 ---
 
