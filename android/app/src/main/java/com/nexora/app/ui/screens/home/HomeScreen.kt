@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MeetingRoom
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -28,6 +28,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,19 +53,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.nexora.app.NexoraApp
 import com.nexora.app.domain.model.HomeMemberModel
 import com.nexora.app.domain.model.HomeModel
 import com.nexora.app.domain.model.RoomModel
+import com.nexora.app.ui.screens.device.DeviceItem
+import com.nexora.app.ui.screens.device.DeviceViewModel
+import com.nexora.app.ui.screens.device.DeviceViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onNavigateToRoomDetail: (homeId: Int, roomId: Int) -> Unit
+    onNavigateToRoomDetail: (homeId: Int, roomId: Int) -> Unit,
+    onNavigateToDeviceDetail: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    val context = LocalContext.current
+    val app = context.applicationContext as NexoraApp
+    val deviceViewModel: DeviceViewModel = viewModel(
+        factory = DeviceViewModelFactory(app.deviceRepository)
+    )
 
     var showCreateHomeDialog by remember { mutableStateOf(false) }
     var showJoinHomeDialog by remember { mutableStateOf(false) }
@@ -197,13 +211,19 @@ fun HomeScreen(
                     Tab(
                         selected = selectedTabIndex == 0,
                         onClick = { selectedTabIndex = 0 },
-                        text = { Text("Rooms (${uiState.rooms.size})") },
+                        text = { Text("Rooms") },
                         icon = { Icon(Icons.Default.MeetingRoom, contentDescription = null) }
                     )
                     Tab(
                         selected = selectedTabIndex == 1,
                         onClick = { selectedTabIndex = 1 },
-                        text = { Text("Members (${uiState.members.size})") },
+                        text = { Text("Devices") },
+                        icon = { Icon(Icons.Default.Devices, contentDescription = null) }
+                    )
+                    Tab(
+                        selected = selectedTabIndex == 2,
+                        onClick = { selectedTabIndex = 2 },
+                        text = { Text("Members") },
                         icon = { Icon(Icons.Default.People, contentDescription = null) }
                     )
                 }
@@ -217,7 +237,11 @@ fun HomeScreen(
                             }
                         }
                     )
-                    1 -> MembersTabContent(
+                    1 -> DevicesTabContent(
+                        viewModel = deviceViewModel,
+                        onDeviceClick = onNavigateToDeviceDetail
+                    )
+                    2 -> MembersTabContent(
                         members = uiState.members,
                         selectedHome = uiState.selectedHome,
                         onRemoveMember = { viewModel.removeMember(it) },
@@ -311,6 +335,51 @@ fun RoomsTabContent(
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DevicesTabContent(
+    viewModel: DeviceViewModel,
+    onDeviceClick: (String) -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    if (uiState.isLoading && uiState.devices.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (uiState.devices.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No devices found in this home.")
+        }
+    } else {
+        val groupedDevices = uiState.devices.groupBy { it.room }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            groupedDevices.forEach { (room, devices) ->
+                item {
+                    Column {
+                        Text(
+                            text = room,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
+                    }
+                }
+                items(devices) { device ->
+                    DeviceItem(
+                        device = device,
+                        onClick = { onDeviceClick(device.id) }
+                    )
                 }
             }
         }

@@ -9,6 +9,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.nexora.app.NexoraApp
+import com.nexora.app.ui.screens.device.DeviceDetailScreen
+import com.nexora.app.ui.screens.device.DeviceViewModel
+import com.nexora.app.ui.screens.device.DeviceViewModelFactory
 import com.nexora.app.ui.screens.forgot_password.ForgotPasswordScreen
 import com.nexora.app.ui.screens.home.HomeScreen
 import com.nexora.app.ui.screens.home.HomeViewModel
@@ -29,9 +32,14 @@ object Routes {
     const val FORGOT_PASSWORD = "forgot_password"
     const val HOME = "home"
     const val ROOM_DETAIL = "room_detail/{homeId}/{roomId}"
+    const val DEVICE_DETAIL = "device_detail/{deviceId}"
 
     fun buildRoomDetailRoute(homeId: Int, roomId: Int): String {
         return "room_detail/$homeId/$roomId"
+    }
+
+    fun buildDeviceDetailRoute(deviceId: String): String {
+        return "device_detail/$deviceId"
     }
 }
 
@@ -98,6 +106,9 @@ fun NexoraNavGraph(navController: NavHostController) {
                 viewModel = homeViewModel,
                 onNavigateToRoomDetail = { homeId, roomId ->
                     navController.navigate(Routes.buildRoomDetailRoute(homeId, roomId))
+                },
+                onNavigateToDeviceDetail = { deviceId ->
+                    navController.navigate(Routes.buildDeviceDetailRoute(deviceId))
                 }
             )
         }
@@ -117,6 +128,25 @@ fun NexoraNavGraph(navController: NavHostController) {
 
             RoomDetailScreen(
                 viewModel = roomDetailViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(
+            route = Routes.DEVICE_DETAIL,
+            arguments = listOf(
+                navArgument("deviceId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val deviceId = backStackEntry.arguments?.getString("deviceId") ?: ""
+            val deviceViewModel: DeviceViewModel = viewModel(
+                factory = DeviceViewModelFactory(app.deviceRepository)
+            )
+
+            DeviceDetailScreen(
+                deviceId = deviceId,
+                viewModel = deviceViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 }

@@ -9,6 +9,8 @@ import com.nexora.app.data.remote.HomeApiService
 import com.nexora.app.data.remote.RoomApiService
 import com.nexora.app.data.repository.AuthRepository
 import com.nexora.app.data.repository.AuthRepositoryImpl
+import com.nexora.app.data.repository.DeviceRepository
+import com.nexora.app.data.repository.DeviceRepositoryMock
 import com.nexora.app.data.repository.HomeRepository
 import com.nexora.app.data.repository.HomeRepositoryImpl
 import com.nexora.app.data.repository.RoomRepository
@@ -28,6 +30,9 @@ class NexoraApp : Application() {
     lateinit var roomRepository: RoomRepository
         private set
 
+    lateinit var deviceRepository: DeviceRepository
+        private set
+
     override fun onCreate() {
         super.onCreate()
         
@@ -41,5 +46,7 @@ class NexoraApp : Application() {
 
         val roomApiService = ApiClient.createService<RoomApiService>(tokenManager = tokenManager)
         roomRepository = RoomRepositoryImpl(roomApiService)
+
+        deviceRepository = DeviceRepositoryMock()
     }
 }
