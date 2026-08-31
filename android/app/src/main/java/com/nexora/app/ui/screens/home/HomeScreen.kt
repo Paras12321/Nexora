@@ -27,7 +27,8 @@ import com.nexora.app.ui.screens.device.DeviceViewModelFactory
 fun HomeScreen(
     viewModel: HomeViewModel,
     onNavigateToRoomDetail: (homeId: Int, roomId: Int) -> Unit,
-    onNavigateToDeviceDetail: (String) -> Unit
+    onNavigateToDeviceDetail: (String) -> Unit,
+    onNavigateToEnergy: (homeId: Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -102,6 +103,13 @@ fun HomeScreen(
                                     showJoinHomeDialog = true
                                 }
                             )
+                        }
+                    }
+                },
+                actions = {
+                    uiState.selectedHome?.let { home ->
+                        IconButton(onClick = { onNavigateToEnergy(home.id) }) {
+                            Icon(Icons.Default.Bolt, contentDescription = "Energy & Billing")
                         }
                     }
                 },

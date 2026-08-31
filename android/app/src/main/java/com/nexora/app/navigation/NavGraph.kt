@@ -12,6 +12,9 @@ import com.nexora.app.NexoraApp
 import com.nexora.app.ui.screens.device.DeviceDetailScreen
 import com.nexora.app.ui.screens.device.DeviceViewModel
 import com.nexora.app.ui.screens.device.DeviceViewModelFactory
+import com.nexora.app.ui.screens.energy.EnergyScreen
+import com.nexora.app.ui.screens.energy.EnergyViewModel
+import com.nexora.app.ui.screens.energy.EnergyViewModelFactory
 import com.nexora.app.ui.screens.forgot_password.ForgotPasswordScreen
 import com.nexora.app.ui.screens.home.HomeScreen
 import com.nexora.app.ui.screens.home.HomeViewModel
@@ -33,6 +36,7 @@ object Routes {
     const val HOME = "home"
     const val ROOM_DETAIL = "room_detail/{homeId}/{roomId}"
     const val DEVICE_DETAIL = "device_detail/{deviceId}"
+    const val ENERGY = "energy/{homeId}"
 
     fun buildRoomDetailRoute(homeId: Int, roomId: Int): String {
         return "room_detail/$homeId/$roomId"
@@ -40,6 +44,10 @@ object Routes {
 
     fun buildDeviceDetailRoute(deviceId: String): String {
         return "device_detail/$deviceId"
+    }
+
+    fun buildEnergyRoute(homeId: Int): String {
+        return "energy/$homeId"
     }
 }
 
@@ -109,6 +117,9 @@ fun NexoraNavGraph(navController: NavHostController) {
                 },
                 onNavigateToDeviceDetail = { deviceId ->
                     navController.navigate(Routes.buildDeviceDetailRoute(deviceId))
+                },
+                onNavigateToEnergy = { homeId ->
+                    navController.navigate(Routes.buildEnergyRoute(homeId))
                 }
             )
         }
@@ -147,6 +158,23 @@ fun NexoraNavGraph(navController: NavHostController) {
             DeviceDetailScreen(
                 deviceId = deviceId,
                 viewModel = deviceViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(
+            route = Routes.ENERGY,
+            arguments = listOf(
+                navArgument("homeId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val homeId = backStackEntry.arguments?.getInt("homeId") ?: 0
+            val energyViewModel: EnergyViewModel = viewModel(
+                factory = EnergyViewModelFactory(homeId, app.energyRepository)
+            )
+            EnergyScreen(
+                viewModel = energyViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
