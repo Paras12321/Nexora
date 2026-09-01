@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.nexora.app.data.repository.AuthRepositoryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-01T15:35:57.918Z" hostname="LAPTOP-TNNGLCM8" time="0.459">
+  <properties/>
+  <testcase name="login generic backend error does not fallback to fake success" classname="com.nexora.app.data.repository.AuthRepositoryTest" time="0.413"/>
+  <testcase name="login success sends request payload with email username and password and saves token" classname="com.nexora.app.data.repository.AuthRepositoryTest" time="0.012"/>
+  <testcase name="login 400 bad request with field validation error returns formatted message" classname="com.nexora.app.data.repository.AuthRepositoryTest" time="0.009"/>
+  <testcase name="register generic backend error does not fallback to fake success" classname="com.nexora.app.data.repository.AuthRepositoryTest" time="0.009"/>
+  <testcase name="login 400 bad request error returns HttpError with parsed detail" classname="com.nexora.app.data.repository.AuthRepositoryTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

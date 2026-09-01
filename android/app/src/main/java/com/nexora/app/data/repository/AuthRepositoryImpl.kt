@@ -6,9 +6,7 @@ import com.nexora.app.data.model.DetailResponse
 import com.nexora.app.data.model.LoginRequest
 import com.nexora.app.data.model.PasswordResetRequest
 import com.nexora.app.data.model.RegisterRequest
-import com.nexora.app.data.model.UserDto
 import com.nexora.app.data.remote.AuthApiService
-import com.nexora.app.data.remote.NetworkError
 import com.nexora.app.data.remote.NetworkResult
 
 class AuthRepositoryImpl(
@@ -23,27 +21,7 @@ class AuthRepositoryImpl(
                 tokenManager.saveToken(result.data.token)
                 result
             }
-            is NetworkResult.Error -> {
-                // If backend returns a specific validation error message, surface it
-                if (result.error is NetworkError.HttpError && !result.error.serverMessage.isNullOrBlank() && result.error.serverMessage != "Invalid request. Please check your inputs and try again.") {
-                    result
-                } else {
-                    // Demo / Offline fallback when backend API server is unreachable or returning empty HTTP error
-                    val mockUser = UserDto(
-                        id = (1000..9999).random(),
-                        email = request.email,
-                        firstName = request.firstName,
-                        lastName = request.lastName,
-                        dateJoined = "2026-09-01"
-                    )
-                    val mockResponse = AuthResponse(
-                        token = "nexora_demo_token_${System.currentTimeMillis()}",
-                        user = mockUser
-                    )
-                    tokenManager.saveToken(mockResponse.token)
-                    NetworkResult.Success(mockResponse)
-                }
-            }
+            is NetworkResult.Error -> result
             is NetworkResult.Loading -> result
         }
     }
@@ -54,27 +32,7 @@ class AuthRepositoryImpl(
                 tokenManager.saveToken(result.data.token)
                 result
             }
-            is NetworkResult.Error -> {
-                // If backend returns a specific validation error message, surface it
-                if (result.error is NetworkError.HttpError && !result.error.serverMessage.isNullOrBlank() && result.error.serverMessage != "Invalid request. Please check your inputs and try again.") {
-                    result
-                } else {
-                    // Demo / Offline fallback when backend API server is unreachable or returning empty HTTP error
-                    val mockUser = UserDto(
-                        id = 1,
-                        email = request.email,
-                        firstName = request.email.substringBefore("@").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                        lastName = "User",
-                        dateJoined = "2026-09-01"
-                    )
-                    val mockResponse = AuthResponse(
-                        token = "nexora_demo_token_${System.currentTimeMillis()}",
-                        user = mockUser
-                    )
-                    tokenManager.saveToken(mockResponse.token)
-                    NetworkResult.Success(mockResponse)
-                }
-            }
+            is NetworkResult.Error -> result
             is NetworkResult.Loading -> result
         }
     }

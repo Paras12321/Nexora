@@ -2,6 +2,7 @@ package com.nexora.app.data.repository
 
 import com.nexora.app.data.local.TokenManager
 import com.nexora.app.data.model.LoginRequest
+import com.nexora.app.data.model.RegisterRequest
 import com.nexora.app.data.remote.ApiClient
 import com.nexora.app.data.remote.AuthApiService
 import com.nexora.app.data.remote.NetworkError
@@ -138,5 +139,48 @@ class AuthRepositoryTest {
         assertEquals(400, httpError.statusCode)
         assertTrue(httpError.message.contains("Email: Enter a valid email address."))
         assertTrue(httpError.message.contains("Password: This field may not be blank."))
+    }
+
+    @Test
+    fun `login generic backend error does not fallback to fake success`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(500)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"detail\": \"Server error\"}")
+        )
+
+        val result = repository.login(LoginRequest(email = "user@nexora.com", password = "secretpassword"))
+
+        assertTrue(result is NetworkResult.Error)
+        val error = (result as NetworkResult.Error).error
+        assertTrue(error is NetworkError.HttpError)
+        assertEquals(500, (error as NetworkError.HttpError).statusCode)
+        assertEquals("Server error", error.message)
+    }
+
+    @Test
+    fun `register generic backend error does not fallback to fake success`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"detail\": \"Invalid request. Please check your inputs and try again.\"}")
+        )
+
+        val result = repository.register(
+            RegisterRequest(
+                email = "newuser@nexora.com",
+                password = "VeryStrongPassword123!",
+                firstName = "New",
+                lastName = "User"
+            )
+        )
+
+        assertTrue(result is NetworkResult.Error)
+        val error = (result as NetworkResult.Error).error
+        assertTrue(error is NetworkError.HttpError)
+        assertEquals(400, (error as NetworkError.HttpError).statusCode)
+        assertEquals("Invalid request. Please check your inputs and try again.", error.message)
     }
 }
