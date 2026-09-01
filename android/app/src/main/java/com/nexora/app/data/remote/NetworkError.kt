@@ -28,7 +28,16 @@ sealed class NetworkError : Throwable() {
         val rawErrorBody: String? = null
     ) : NetworkError() {
         override val message: String
-            get() = serverMessage ?: "HTTP Error $statusCode"
+            get() = serverMessage ?: when (statusCode) {
+                400 -> "Invalid request. Please check your inputs and try again."
+                401 -> "Session expired. Please log in again."
+                403 -> "Permission denied. You do not have access to perform this action."
+                404 -> "Requested resource was not found."
+                409 -> "Resource conflict or item already exists."
+                500 -> "Internal server error. Please try again later."
+                502, 503, 504 -> "Server is temporarily unavailable. Please try again later."
+                else -> "Server error ($statusCode)"
+            }
     }
 
     /**

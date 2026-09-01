@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Nexora</string>
-    <style name="Theme.Nexora" parent="android:Theme.Material.Light.NoActionBar"/>
-    <style name="Theme.Nexora.Splash" parent="Theme.Nexora">
-        <item name="android:windowBackground">@android:color/black</item>
-    </style>
-</resources>

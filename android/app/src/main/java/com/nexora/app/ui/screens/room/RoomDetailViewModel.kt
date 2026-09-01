@@ -123,20 +123,7 @@ class RoomDetailViewModel(
     }
 
     private fun formatErrorMessage(error: NetworkError): String {
-        return when (error) {
-            is NetworkError.HttpError -> {
-                when (error.statusCode) {
-                    401 -> "Session expired. Please log in again."
-                    403 -> error.serverMessage ?: "Permission denied. Only home owners can modify room configurations."
-                    404 -> error.serverMessage ?: "Room or member not found."
-                    400, 409 -> error.serverMessage ?: "Invalid request or member already assigned."
-                    else -> error.serverMessage ?: "Server error (${error.statusCode})."
-                }
-            }
-            is NetworkError.ConnectivityError -> error.userFriendlyMessage
-            is NetworkError.SerializationError -> error.userFriendlyMessage
-            is NetworkError.UnknownError -> error.userFriendlyMessage
-        }
+        return error.message ?: "An unexpected error occurred."
     }
 }
 

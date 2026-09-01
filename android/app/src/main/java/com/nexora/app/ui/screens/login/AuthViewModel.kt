@@ -24,10 +24,12 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     fun login(email: String, password: String) {
+        val trimmedEmail = email.trim()
+        val trimmedPassword = password.trim()
         if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
-            when (val result = repository.login(LoginRequest(email, password))) {
+            when (val result = repository.login(LoginRequest(email = trimmedEmail, username = trimmedEmail, password = trimmedPassword))) {
                 is NetworkResult.Success -> {
                     _uiState.value = AuthUiState(isSuccess = true)
                 }
@@ -40,10 +42,20 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     }
 
     fun register(firstName: String, lastName: String, email: String, password: String) {
+        val trimmedFirstName = firstName.trim()
+        val trimmedLastName = lastName.trim()
+        val trimmedEmail = email.trim()
+        val trimmedPassword = password.trim()
         if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
-            val request = RegisterRequest(email, password, firstName, lastName)
+            val request = RegisterRequest(
+                email = trimmedEmail,
+                password = trimmedPassword,
+                firstName = trimmedFirstName,
+                lastName = trimmedLastName,
+                username = trimmedEmail
+            )
             when (val result = repository.register(request)) {
                 is NetworkResult.Success -> {
                     _uiState.value = AuthUiState(isSuccess = true)

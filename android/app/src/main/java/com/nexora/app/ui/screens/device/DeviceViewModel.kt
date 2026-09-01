@@ -74,12 +74,7 @@ class DeviceViewModel(
     }
 
     private fun formatErrorMessage(error: NetworkError): String {
-        return when (error) {
-            is NetworkError.HttpError -> error.serverMessage ?: "HTTP Error ${error.statusCode}"
-            is NetworkError.ConnectivityError -> error.userFriendlyMessage
-            is NetworkError.SerializationError -> error.userFriendlyMessage
-            is NetworkError.UnknownError -> error.userFriendlyMessage
-        }
+        return error.message ?: "An unexpected error occurred."
     }
 }
 

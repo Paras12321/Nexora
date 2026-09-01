@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.nexora.app.data.remote.AuthInterceptorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-31T13:37:22.013Z" hostname="LAPTOP-TNNGLCM8" time="0.018">
-  <properties/>
-  <testcase name="does not attach header when token is null" classname="com.nexora.app.data.remote.AuthInterceptorTest" time="0.007"/>
-  <testcase name="attaches token header when token is present" classname="com.nexora.app.data.remote.AuthInterceptorTest" time="0.005"/>
-  <testcase name="preserves existing authorization header" classname="com.nexora.app.data.remote.AuthInterceptorTest" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

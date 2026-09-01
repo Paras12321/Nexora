@@ -8,13 +8,13 @@ This module contains the core Android networking infrastructure, repository patt
 
 The application uses an environment-safe base URL injected into `BuildConfig.BASE_URL` at build time.
 
-- **Default (Android Emulator):** `http://10.0.2.2:8000/api/`
-  - In Android emulators, `10.0.2.2` maps to `localhost` on the host development machine running the Django REST backend.
-- **Physical Device Testing:** Configure `BASE_URL` in `gradle.properties`:
+- **Default (same Wi‑Fi / physical device):** `http://192.168.0.26:8000/api/`
+  - This matches the workstation's LAN IP so a real Android phone can reach the Django backend while both devices are on the same network.
+- **Android Emulator:** Use `http://10.0.2.2:8000/api/` instead if you are testing in the emulator.
+- **Custom Override:** Configure `BASE_URL` in `gradle.properties` or pass it on the command line:
   ```properties
   BASE_URL=http://<YOUR_LOCAL_IP>:8000/api/
   ```
-- **Custom Environment Override via Command Line:**
   ```bash
   ./gradlew assembleDebug -PBASE_URL="http://192.168.1.100:8000/api/"
   ```

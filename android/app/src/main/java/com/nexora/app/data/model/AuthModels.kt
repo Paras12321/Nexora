@@ -21,6 +21,7 @@ data class AuthResponse(
 @Serializable
 data class LoginRequest(
     val email: String,
+    val username: String = email,
     val password: String
 )
 
@@ -29,7 +30,8 @@ data class RegisterRequest(
     val email: String,
     val password: String,
     @SerialName("first_name") val firstName: String,
-    @SerialName("last_name") val lastName: String
+    @SerialName("last_name") val lastName: String,
+    val username: String = email
 )
 
 @Serializable

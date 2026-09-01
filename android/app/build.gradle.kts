@@ -15,7 +15,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        val baseUrl = project.findProperty("BASE_URL") as? String ?: "http://10.0.2.2:8000/api/"
+        val baseUrl = project.findProperty("BASE_URL") as? String ?: "http://192.168.0.26:8000/api/"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
 
         val googleHomeProjectId = project.findProperty("GOOGLE_HOME_PROJECT_ID") as? String ?: "nexora-google-home-dev"

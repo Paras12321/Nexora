@@ -1,14 +1,36 @@
 package com.nexora.app.ui.screens.register
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -25,7 +47,7 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit,
     viewModel: AuthViewModel = viewModel(
-        factory = AuthViewModelFactory((androidx.compose.ui.platform.LocalContext.current.applicationContext as NexoraApp).authRepository)
+        factory = AuthViewModelFactory((LocalContext.current.applicationContext as NexoraApp).authRepository)
     )
 ) {
     var firstName by remember { mutableStateOf("") }
@@ -73,14 +95,34 @@ fun RegisterScreen(
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
+            if (uiState.error != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Text(
+                        text = uiState.error!!,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+
             Row(modifier = Modifier.fillMaxWidth()) {
                 NexoraTextField(
                     value = firstName,
                     onValueChange = { 
                         firstName = it
                         firstNameError = null
+                        viewModel.clearError()
                     },
                     label = "First Name",
                     modifier = Modifier.weight(1f),
@@ -93,6 +135,7 @@ fun RegisterScreen(
                     onValueChange = { 
                         lastName = it
                         lastNameError = null
+                        viewModel.clearError()
                     },
                     label = "Last Name",
                     modifier = Modifier.weight(1f),
@@ -111,8 +154,8 @@ fun RegisterScreen(
                 },
                 label = "Email",
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = emailError != null || uiState.error != null,
-                errorMessage = emailError ?: uiState.error
+                isError = (emailError != null || uiState.error != null),
+                errorMessage = emailError
             )
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -121,6 +164,7 @@ fun RegisterScreen(
                 onValueChange = { 
                     password = it
                     passwordError = null
+                    viewModel.clearError()
                 },
                 label = "Password",
                 visualTransformation = PasswordVisualTransformation(),
@@ -135,6 +179,7 @@ fun RegisterScreen(
                 onValueChange = { 
                     confirmPassword = it
                     confirmPasswordError = null
+                    viewModel.clearError()
                 },
                 label = "Confirm Password",
                 visualTransformation = PasswordVisualTransformation(),
@@ -185,6 +230,7 @@ fun RegisterScreen(
                 isLoading = uiState.isLoading,
                 onClick = {
                     var hasError = false
+                    val trimmedEmail = email.trim()
                     if (firstName.isBlank()) {
                         firstNameError = "First name required"
                         hasError = true
@@ -193,11 +239,13 @@ fun RegisterScreen(
                         lastNameError = "Last name required"
                         hasError = true
                     }
-                    if (email.isBlank()) {
+                    val emailLower = trimmedEmail.lowercase()
+                    if (trimmedEmail.isBlank()) {
                         emailError = "Email is required"
                         hasError = true
-                    } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                        emailError = "Invalid email format"
+                    } else if (!android.util.Patterns.EMAIL_ADDRESS.matcher(trimmedEmail).matches() || 
+                               emailLower.endsWith(".comm") || emailLower.endsWith(".con") || emailLower.contains("..")) {
+                        emailError = "Invalid email address format"
                         hasError = true
                     }
                     if (password.length < 8) {
@@ -214,7 +262,7 @@ fun RegisterScreen(
                     }
                     
                     if (!hasError) {
-                        viewModel.register(firstName, lastName, email, password)
+                        viewModel.register(firstName, lastName, trimmedEmail, password)
                     }
                 }
             )

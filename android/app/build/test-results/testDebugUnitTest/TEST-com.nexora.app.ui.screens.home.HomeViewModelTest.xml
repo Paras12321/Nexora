@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.nexora.app.ui.screens.home.HomeViewModelTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-31T13:37:22.231Z" hostname="LAPTOP-TNNGLCM8" time="0.009">
-  <properties/>
-  <testcase name="createHome with blank name sets validation error" classname="com.nexora.app.ui.screens.home.HomeViewModelTest" time="0.005"/>
-  <testcase name="loadHomes updates uiState with loaded homes and auto selects first home" classname="com.nexora.app.ui.screens.home.HomeViewModelTest" time="0.002"/>
-  <testcase name="inviteMember with invalid email sets validation error" classname="com.nexora.app.ui.screens.home.HomeViewModelTest" time="0.002"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

@@ -1,7 +1,6 @@
 package com.nexora.app.data.repository
 
 import com.nexora.app.data.remote.ApiClient
-import com.nexora.app.data.remote.ApiErrorResponse
 import com.nexora.app.data.remote.NetworkError
 import com.nexora.app.data.remote.NetworkResult
 import kotlinx.serialization.SerializationException
@@ -43,7 +42,7 @@ abstract class BaseRepository {
                 NetworkResult.Error(
                     NetworkError.HttpError(
                         statusCode = code,
-                        serverMessage = parsedDetail ?: "Server error ($code)",
+                        serverMessage = parsedDetail,
                         rawErrorBody = rawErrorBody
                     )
                 )
@@ -77,39 +76,103 @@ abstract class BaseRepository {
 
     /**
      * Attempts to parse backend error payload JSON into standard error message string.
-     * Supports both global detail messages and field-specific validation error dictionaries from DRF.
+     * Supports DRF, FastAPI, Express, Spring, Laravel, and custom backend error formats.
      */
     private fun parseErrorDetail(errorBody: String?): String? {
         if (errorBody.isNullOrBlank()) return null
+        val trimmed = errorBody.trim()
         return try {
-            val jsonElement = ApiClient.defaultJson.parseToJsonElement(errorBody)
-            if (jsonElement is kotlinx.serialization.json.JsonObject) {
-                // 1. Check direct detail / message / error keys first
-                jsonElement["detail"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) return it.content }
-                jsonElement["message"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) return it.content }
-                jsonElement["error"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) return it.content }
+            val jsonElement = ApiClient.defaultJson.parseToJsonElement(trimmed)
+            val parsed = parseJsonErrorElement(jsonElement)
+            if (!parsed.isNullOrBlank()) {
+                parsed
+            } else if (!trimmed.startsWith("<") && !trimmed.startsWith("<!DOCTYPE", ignoreCase = true)) {
+                trimmed
+            } else null
+        } catch (_: Exception) {
+            // Fallback for non-JSON plain text error bodies (excluding HTML pages)
+            if (!trimmed.startsWith("<") && !trimmed.startsWith("<!DOCTYPE", ignoreCase = true)) {
+                trimmed
+            } else null
+        }
+    }
 
-                // 2. Parse field validation errors (e.g. {"password": ["Error..."], "email": ["..."]})
+    private fun parseJsonErrorElement(jsonElement: kotlinx.serialization.json.JsonElement): String? {
+        return when (jsonElement) {
+            is kotlinx.serialization.json.JsonPrimitive -> {
+                if (jsonElement.isString && jsonElement.content.isNotBlank()) {
+                    jsonElement.content
+                } else null
+            }
+            is kotlinx.serialization.json.JsonObject -> {
+                // Check FastAPI / Pydantic validation error schema: {"loc": [...], "msg": "..."}
+                if (jsonElement.containsKey("loc") && jsonElement.containsKey("msg")) {
+                    val locArray = (jsonElement["loc"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull {
+                        (it as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    }
+                    val msg = (jsonElement["msg"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    if (!msg.isNullOrBlank()) {
+                        val field = locArray?.lastOrNull { it != "body" && it != "query" && it != "path" }
+                        return if (!field.isNullOrBlank()) {
+                            "${formatFieldName(field)}: $msg"
+                        } else {
+                            msg
+                        }
+                    }
+                }
+
+                // Check Spring Boot field validation error schema: {"field": "...", "defaultMessage": "..."}
+                if (jsonElement.containsKey("field") && (jsonElement.containsKey("defaultMessage") || jsonElement.containsKey("message"))) {
+                    val field = (jsonElement["field"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    val msg = (jsonElement["defaultMessage"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                        ?: (jsonElement["message"] as? kotlinx.serialization.json.JsonPrimitive)?.content
+                    if (!field.isNullOrBlank() && !msg.isNullOrBlank()) {
+                        return "${formatFieldName(field)}: $msg"
+                    }
+                }
+
+                // 1. Check known top-level error keys
+                val directKeys = listOf("detail", "details", "message", "messages", "error", "errors", "non_field_errors", "msg", "reason", "error_description")
+                for (key in directKeys) {
+                    val value = jsonElement[key] ?: continue
+                    val extracted = parseJsonErrorElement(value)
+                    if (!extracted.isNullOrBlank()) return extracted
+                }
+
+                // 2. Parse field-specific validation error dictionaries (e.g. {"email": ["Already in use"], "password": ["Too short"]})
                 val fieldErrors = mutableListOf<String>()
                 for ((key, value) in jsonElement) {
-                    if (value is kotlinx.serialization.json.JsonArray) {
-                        val msgs = value.filterIsInstance<kotlinx.serialization.json.JsonPrimitive>().map { it.content }
-                        if (msgs.isNotEmpty()) {
-                            val fieldName = key.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                            fieldErrors.add("$fieldName: ${msgs.joinToString(", ")}")
+                    if (key in directKeys) continue
+                    val fieldMsg = when (value) {
+                        is kotlinx.serialization.json.JsonPrimitive -> {
+                            if (value.isString && value.content.isNotBlank()) value.content else null
                         }
-                    } else if (value is kotlinx.serialization.json.JsonPrimitive && value.isString) {
-                        val fieldName = key.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-                        fieldErrors.add("$fieldName: ${value.content}")
+                        is kotlinx.serialization.json.JsonArray -> {
+                            val msgs = value.mapNotNull { parseJsonErrorElement(it) }
+                            if (msgs.isNotEmpty()) msgs.joinToString(", ") else null
+                        }
+                        is kotlinx.serialization.json.JsonObject -> {
+                            parseJsonErrorElement(value)
+                        }
+                    }
+                    if (!fieldMsg.isNullOrBlank()) {
+                        val fieldName = formatFieldName(key)
+                        fieldErrors.add("$fieldName: $fieldMsg")
                     }
                 }
                 if (fieldErrors.isNotEmpty()) {
                     return fieldErrors.joinToString("\n")
                 }
+                null
             }
-            null
-        } catch (_: Exception) {
-            null
+            is kotlinx.serialization.json.JsonArray -> {
+                val msgs = jsonElement.mapNotNull { parseJsonErrorElement(it) }.filter { it.isNotBlank() }
+                if (msgs.isNotEmpty()) msgs.joinToString(", ") else null
+            }
         }
+    }
+
+    private fun formatFieldName(key: String): String {
+        return key.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
 }

@@ -88,7 +88,7 @@ class BaseRepositoryTest {
 
     @Test
     fun `malformed response body returns SerializationError`() = runTest {
-        val malformedJson = "{ status: ok, service: missing_quotes }"
+        val malformedJson = "{ \"status\": [invalid_array_type] }"
 
         mockWebServer.enqueue(
             MockResponse()
@@ -102,6 +102,112 @@ class BaseRepositoryTest {
         assertTrue(result is NetworkResult.Error)
         val error = (result as NetworkResult.Error).error
         assertTrue(error is NetworkError.SerializationError)
+    }
+
+    @Test
+    fun `http 400 error parses field validation errors from error body`() = runTest {
+        val errorJson = """
+            {
+                "email": ["Enter a valid email address."],
+                "password": ["This field is required."]
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setHeader("Content-Type", "application/json")
+                .setBody(errorJson)
+        )
+
+        val result = repository.getHealthStatus()
+
+        assertTrue(result is NetworkResult.Error)
+        val error = (result as NetworkResult.Error).error
+        assertTrue(error is NetworkError.HttpError)
+        val httpError = error as NetworkError.HttpError
+        assertEquals(400, httpError.statusCode)
+        assertTrue(httpError.serverMessage?.contains("Email: Enter a valid email address.") == true)
+        assertTrue(httpError.serverMessage?.contains("Password: This field is required.") == true)
+    }
+
+    @Test
+    fun `http 400 error parses nested errors object`() = runTest {
+        val errorJson = """
+            {
+                "errors": {
+                    "email": ["User with this email already exists."]
+                }
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setHeader("Content-Type", "application/json")
+                .setBody(errorJson)
+        )
+
+        val result = repository.getHealthStatus()
+
+        assertTrue(result is NetworkResult.Error)
+        val error = (result as NetworkResult.Error).error
+        assertTrue(error is NetworkError.HttpError)
+        val httpError = error as NetworkError.HttpError
+        assertEquals(400, httpError.statusCode)
+        assertEquals("Email: User with this email already exists.", httpError.serverMessage)
+    }
+
+    @Test
+    fun `http 400 error parses FastAPI pydantic validation errors`() = runTest {
+        val errorJson = """
+            {
+                "detail": [
+                    {
+                        "loc": ["body", "email"],
+                        "msg": "value is not a valid email address",
+                        "type": "value_error.email"
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setHeader("Content-Type", "application/json")
+                .setBody(errorJson)
+        )
+
+        val result = repository.getHealthStatus()
+
+        assertTrue(result is NetworkResult.Error)
+        val error = (result as NetworkResult.Error).error
+        assertTrue(error is NetworkError.HttpError)
+        val httpError = error as NetworkError.HttpError
+        assertEquals(400, httpError.statusCode)
+        assertEquals("Email: value is not a valid email address", httpError.serverMessage)
+    }
+
+    @Test
+    fun `http 400 error parses reason field from json`() = runTest {
+        val rawJson = """{"status_code":400,"reason":"User account registration failed"}"""
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setHeader("Content-Type", "application/json")
+                .setBody(rawJson)
+        )
+
+        val result = repository.getHealthStatus()
+
+        assertTrue(result is NetworkResult.Error)
+        val error = (result as NetworkResult.Error).error
+        assertTrue(error is NetworkError.HttpError)
+        val httpError = error as NetworkError.HttpError
+        assertEquals(400, httpError.statusCode)
+        assertEquals("User account registration failed", httpError.serverMessage)
     }
 
     @Test
